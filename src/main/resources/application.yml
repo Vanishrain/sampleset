@@ -1,0 +1,80 @@
+server:
+  port: 28000
+  servlet:
+    context-path: /geoapi/V1/datasets
+  tomcat:
+    max-http-post-size: -1
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.50.233:3306/geo?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+  redis:
+    host: 192.168.50.233
+    port: 6379
+    password: 123456
+    jedis:
+      pool:
+        min-idle: 3
+        max-idle: 10
+        max-active: 30
+        max-wait: 10000
+    timeout: 5000
+  http:
+    multipart:
+      max-file-size:  5MB
+      max-request-seize: 100MB
+  servlet:
+    multipart:
+      enabled: true
+      file-size-threshold: 0
+      max-file-size: 1000MB  #单个文件数据大小
+      max-request-size: 1000000MB #总文件大小
+
+  aop:
+    proxy-target-class: true
+
+
+#mybatis plus 设置
+mybatis-plus:
+  type-aliases-package: cn.iecas.datasets.image.pojo
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    jdbc-type-for-null: null
+  global-config:
+    # 关闭 mybatis-plus的 banner
+    banner: false
+
+datasource:
+  file:
+    rootPath: sdfsdf
+
+value:
+  dir:
+    monitorDir: D:\\SJCP\\YXCP_YGYX\\IMG\\  #监控路径
+    decompressRootDir: data\\fastdfs\\data\\ #/data/fastdfs/data/
+    decompressImgDir: D:\\YXCP_YGYX\\IMG\\  #YXCP_YGYX\IMG\\
+    decompressThumbnailL: YXCP_YGYX\SLT\\
+    decompressThumbnailS: YXCP_YGYX\MZT\\
+  decompressCmd:
+    rar:
+      list: unrar lb
+      decompress: unrar -o+ x
+    zip:
+      list: unzip -l
+      decompress: unzip -q -o
+    tar:
+      list: tar -tf
+      decompress : tar -x  -C
+  postfix:
+    img:  jpg #tif,tiff
+    attach: ovr
+    compressedFile: rar,zip,tar
+  fastdfsServer: 192.168.50.170:8888
+  downloadPath: D:\\zhaoyang\\files\\FastDFSFileDownload\\
+
+breakpoint:
+  upload:
+    chunkSize:  5 242 880
