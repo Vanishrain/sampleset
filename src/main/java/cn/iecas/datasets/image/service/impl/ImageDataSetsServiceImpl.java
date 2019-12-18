@@ -60,11 +60,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
 
     @Override
     public Image getImageByName(int imageDataSetId, String imageName, String type) {
-        ImageDataSetInfoDO imageDataSetInfoDO = getImageDatasetInfoById(imageDataSetId);
-        String datasetPath = imageDataSetInfoDO.getPath();
-        datasetPath = FilenameUtils.normalize(rootPath + File.separator + datasetPath +
-                File.separator + type);
-        return baseDataSource.getImageByName(datasetPath, imageName);
+        return baseDataSource.getImageByName(imageDataSetId, imageName);
     }
 
     /**
@@ -82,14 +78,17 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
             return new ImageSetDTO();
         }
 
-        String datasetPath = imageDataSetInfoDO.getPath();
-        datasetPath = FilenameUtils.separatorsToSystem(datasetPath);
-        ImageSetDTO imageSetDTO = baseDataSource.getImages(datasetPath, imageRequestDTO.getPageNo(), imageRequestDTO.getPageSize());
+        ImageSetDTO imageSetDTO = baseDataSource.getImages(imageDatasetId, imageRequestDTO.getPageNo(), imageRequestDTO.getPageSize());
         imageSetDTO.setTotalCount(imageDataSetInfoDO.getNumber());
         return imageSetDTO;
     }
 
 
+    /**
+     * 分页获取样本集信息
+     * @param imageDatasetInfoRequestDTO
+     * @return
+     */
     @Override
     public List<ImageDataSetInfoDO> listImageDatasetInfoDetail(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO) {
         int pageNo = imageDatasetInfoRequestDTO.getPageNo() !=0 ? imageDatasetInfoRequestDTO.getPageNo() : 1;
@@ -111,7 +110,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      * @param datasetIds
      */
     @Override
-    public  void  deleteImageDataSetByIds(List<String> datasetIds) throws Exception {
+    public  void  deleteImageDataSetByIds(List<String> datasetIds) {
         for(String temp:datasetIds) {
             deleteImageDataSetById(Integer.valueOf(temp));
         }
@@ -121,11 +120,10 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
     /**
      * 根据id删除数据集信息和数据
      * @param imageDataSetId
-     * @throws Exception
      */
    @Override
 
-    public void deleteImageDataSetById(int imageDataSetId) throws Exception {
+    public void deleteImageDataSetById(int imageDataSetId) {
         ImageDataSetInfoDO imageDataSetInfoDO = this.baseMapper.selectById(imageDataSetId);
         int flag = this.baseMapper.deleteById(imageDataSetId);
         if(flag!=0){
@@ -134,18 +132,6 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
         }else{
             log.info("id：{} 数据集不存在", imageDataSetId);
         }
-//        if (flag != 0){
-//            String imageDataSetPath = imageDataSetInfoDO.getPath();
-//            imageDataSetPath = FilenameUtils.normalize(rootPath + File.separator + imageDataSetPath);
-//            try {
-//                FileUtils.deleteDirectory(new File(imageDataSetPath));
-//                log.info("成功删除id为:{}的数据集影像", imageDataSetId);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//                throw new Exception("删除数据集: " + imageDataSetId + "失败.");
-//            }
-//        }else
-//            log.info("id：{} 数据集不存在", imageDataSetId);
     }
 
     /**

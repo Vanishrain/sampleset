@@ -11,10 +11,10 @@ import java.util.List;
 
 public interface ImageDatasetMapper  extends BaseMapper<ImageDataSetInfoDO> {
     List<Statistic> getStatistic();
-    List<ImageDataSetInfoDO> listImageDataSetInfos(Page page, @Param("imageDatasetInfoRequestDTO") ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO);
-    void insertDataset(ImageDataSetInfoDO imageDataSetInfoDO);
-    void updateImageDataset(int value,int imagesetid,String field);
-
     ImageDataSetInfoDO getImageDataSetById(int id);
     void updateNumber(ImageDataSetInfoDO imageDataSetInfoDO);
+    void insertDataset(ImageDataSetInfoDO imageDataSetInfoDO);
+    void updateImageDataset(int value,int imagesetid,String field);
+    List<ImageDataSetInfoDO> listImageDataSetInfos(Page page, @Param("imageDatasetInfoRequestDTO") ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO);
+
 }

@@ -37,13 +37,15 @@ import java.util.List;
 @RequestMapping("/image")
 public class ImageDatasetsController extends BaseController {
     @Autowired
-    StringRedisTemplate stringRedisTemplate;
-    @Autowired
     StorageService storageService;
+
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
+
     @Autowired
     ImageDataSetsService imageDatasetsService;
 
-    @Log("查询数据集影像")
+    @Log("分页查询数据集影像")
     @GetMapping(value = "/images")
     public CommonResponseDTO listImagesByDatasetId(ImageRequestDTO imageRequestDTO){
         ImageSetDTO imageSetDTO = imageDatasetsService.listImagesByDataSetId(imageRequestDTO);
@@ -71,12 +73,7 @@ public class ImageDatasetsController extends BaseController {
         return new CommonResponseDTO<Image>().success().data(image).message("查询标注影像数据成功");
     }
 
-    /**
-     *http://localhost:28000/geoapi/V1/datasets/image/delete/37
-     * @param  idList
-     * @return
-     * @throws Exception
-     */
+    //deleteImageDataSetByIds 未实现
     @Log("删除指定id的影像数据集")
     @DeleteMapping(value = "/{idList}")
     public CommonResponseDTO deleteImageDataSetById(@PathVariable String idList) throws Exception {
@@ -195,26 +192,26 @@ public class ImageDatasetsController extends BaseController {
         return new CommonResponseDTO().success().message("下载完成");
     }
 
-    /*
-    * 根据名称查询
-    * */
-    @Log("根据名称查询")
-    @RequestMapping(value = "getByName", method = RequestMethod.POST)
-    @ResponseBody
-    @CrossOrigin
-    public CommonResponseDTO getByName(TileInfosDO tileInfosDO) throws IOException {
-        String result = storageService.getByName(tileInfosDO);
-
-        return new CommonResponseDTO().success().data(result);
-    }
-
-    /*
-    * 查询所有文件
-    * */
-    @Log("查询所有文件")
-    @GetMapping(value = "getAll")
-    @CrossOrigin
-    public CommonResponseDTO getAll(QueryRequest queryRequest) throws IOException {
-        return new CommonResponseDTO().success().data(storageService.getAll(queryRequest));
-    }
+//    /*
+//    * 根据名称查询
+//    * */
+//    @Log("根据名称查询")
+//    @RequestMapping(value = "getByName", method = RequestMethod.POST)
+//    @ResponseBody
+//    @CrossOrigin
+//    public CommonResponseDTO getByName(TileInfosDO tileInfosDO) throws IOException {
+//        String result = storageService.getByName(tileInfosDO);
+//
+//        return new CommonResponseDTO().success().data(result);
+//    }
+//
+//    /*
+//    * 查询所有文件
+//    * */
+//    @Log("查询所有文件")
+//    @GetMapping(value = "getAll")
+//    @CrossOrigin
+//    public CommonResponseDTO getAll(QueryRequest queryRequest) throws IOException {
+//        return new CommonResponseDTO().success().data(storageService.getAll(queryRequest));
+//    }
 }

@@ -15,8 +15,8 @@ import java.util.List;
 public interface TileInfosMapper extends BaseMapper<TileInfosDO> {
     void deleteByImagesetid(Integer imagesetid);
     void insertTilesInfo(TileInfosDO tileInfoDO);
-    List<TileInfoStatistic> getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO);
-
     String getStoragePath(TileInfosDO tileInfosDO);
     IPage<String> getAll(Page page, @Param("request") QueryRequest request);
+    List<TileInfoStatistic> getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO);
+
 }

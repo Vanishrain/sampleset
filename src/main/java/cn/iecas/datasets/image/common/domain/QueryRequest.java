@@ -1,6 +1,5 @@
 package cn.iecas.datasets.image.common.domain;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Data;
 
 @Data
