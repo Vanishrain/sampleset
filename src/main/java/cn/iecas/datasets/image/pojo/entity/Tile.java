@@ -6,7 +6,7 @@ import lombok.Data;
  * @author vanishrain
  */
 @Data
-public class Image {
+public class Tile {
     private String name;
-    private String base64Image;
+    private String base64Tile;
 }

@@ -3,10 +3,9 @@ package cn.iecas.datasets.image.service.impl;
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
-import cn.iecas.datasets.image.pojo.dto.TileInfoAllStatisticResponseDTO;
-import cn.iecas.datasets.image.pojo.dto.TileInfoStatParamsDTO;
-import cn.iecas.datasets.image.pojo.dto.TileInfoStatisticResponseDTO;
+import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.DatasetTileInfoStatistic;
+import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.TileInfoStatistic;
 import cn.iecas.datasets.image.service.TileInfosService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -39,16 +38,15 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
         log.info("成功插入切片数据imagesetid:{}",tileInfoDO.getImagesetid());
     }
 
-    /**
-     * 批量增加切片数据
-     * @param tileInfosDOS
-     */
+
     @Override
-    public void insertTileInfos(List<TileInfosDO> tileInfosDOS) {
-        for(TileInfosDO tileInfosDO:tileInfosDOS){
-            insertTileInfo(tileInfosDO);
-        }
-        log.info("成功插入所有切片数据");
+    public TileSetDTO listTilesByDataSetId(TileRequestDTO tileRequestDTO) {
+        return null;
+    }
+
+    @Override
+    public Tile getTileByName(int dataSetId, String tileName, String type) {
+        return null;
     }
 
 

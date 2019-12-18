@@ -8,7 +8,7 @@ import java.util.Date;
  * @author vanishrain
  */
 @Data
-public class ImageRequestDTO {
+public class TileRequestDTO {
     private Integer pageNo;
 
     private Integer pageSize;

@@ -4,26 +4,22 @@ import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
-import cn.iecas.datasets.image.pojo.dto.ImageSetDTO;
-import cn.iecas.datasets.image.pojo.dto.ImageRequestDTO;
+import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
+import cn.iecas.datasets.image.pojo.dto.TileRequestDTO;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
-import cn.iecas.datasets.image.pojo.entity.Image;
+import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.Statistic;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -59,28 +55,28 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
     }
 
     @Override
-    public Image getImageByName(int imageDataSetId, String imageName, String type) {
+    public Tile getImageByName(int imageDataSetId, String imageName, String type) {
         return baseDataSource.getImageByName(imageDataSetId, imageName);
     }
 
     /**
      * 根据数据集id获取相应的切片数据
-     * @param imageRequestDTO 获取影像请求参数
+     * @param tileRequestDTO 获取影像请求参数
      * @return
      */
     @Override
-    public ImageSetDTO listImagesByDataSetId(ImageRequestDTO imageRequestDTO) {
-        int imageDatasetId = imageRequestDTO.getImageDatasetId();
+    public TileSetDTO listImagesByDataSetId(TileRequestDTO tileRequestDTO) {
+        int imageDatasetId = tileRequestDTO.getImageDatasetId();
         ImageDataSetInfoDO imageDataSetInfoDO = getImageDatasetInfoById(imageDatasetId);
 
         if (imageDataSetInfoDO == null){
             log.info("影像数据集id：{} 不存在",imageDatasetId);
-            return new ImageSetDTO();
+            return new TileSetDTO();
         }
 
-        ImageSetDTO imageSetDTO = baseDataSource.getImages(imageDatasetId, imageRequestDTO.getPageNo(), imageRequestDTO.getPageSize());
-        imageSetDTO.setTotalCount(imageDataSetInfoDO.getNumber());
-        return imageSetDTO;
+        TileSetDTO tileSetDTO = baseDataSource.getImages(imageDatasetId, tileRequestDTO.getPageNo(), tileRequestDTO.getPageSize());
+        tileSetDTO.setTotalCount(imageDataSetInfoDO.getNumber());
+        return tileSetDTO;
     }
 
 

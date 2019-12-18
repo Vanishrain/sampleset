@@ -2,31 +2,18 @@ package cn.iecas.datasets.image.controller;
 
 import cn.iecas.datasets.image.annotation.Log;
 import cn.iecas.datasets.image.common.controller.BaseController;
-import cn.iecas.datasets.image.common.domain.QueryRequest;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
-import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
-import cn.iecas.datasets.image.pojo.dto.*;
-import cn.iecas.datasets.image.pojo.entity.Image;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultStatus;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
+import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
+import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
+import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
 import cn.iecas.datasets.image.service.StorageService;
-import cn.iecas.datasets.image.utils.Constants;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
-import org.csource.common.MyException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -45,22 +32,7 @@ public class ImageDatasetsController extends BaseController {
     @Autowired
     ImageDataSetsService imageDatasetsService;
 
-    //从fastdfs中获取数据未实现
-    @Log("分页查询数据集影像")
-    @GetMapping(value = "/images")
-    public CommonResponseDTO listImagesByDatasetId(ImageRequestDTO imageRequestDTO){
-        ImageSetDTO imageSetDTO = imageDatasetsService.listImagesByDataSetId(imageRequestDTO);
-        return new CommonResponseDTO().success().data(imageSetDTO).message("查询影像数据成功");
-    }
 
-    
-    //从fastdfs中获取数据未实现
-    @Log("查询指定数据集指定名称的影像")
-    @GetMapping(value = "/images/{datasetId}/{imageName}")
-    public CommonResponseDTO<Image> getImageByName(@PathVariable int datasetId, @PathVariable String imageName){
-        Image image = imageDatasetsService.getImageByName(datasetId, imageName, "imgs");
-        return new CommonResponseDTO<Image>().success().data(image).message("查询影像数据成功");
-    }
 
     @Log("查询影像数据集信息详情")
     @GetMapping(value = "/detail")
@@ -69,12 +41,12 @@ public class ImageDatasetsController extends BaseController {
         return new CommonResponseDTO().success().data(imageDataSetInfoDOList);
     }
 
-    @GetMapping(value = "/visualimg/{datasetId}/{imageName}")
-    public CommonResponseDTO<Image> getLabeledImg(@PathVariable int datasetId, @PathVariable String imageName){
-        imageName = imageName.contains("mt") ? imageName.replaceAll("mt", "%") : imageName;
-        Image image = imageDatasetsService.getImageByName(datasetId, imageName, "visual");
-        return new CommonResponseDTO<Image>().success().data(image).message("查询标注影像数据成功");
-    }
+//    @GetMapping(value = "/visualimg/{datasetId}/{imageName}")
+//    public CommonResponseDTO<Tile> getLabeledImg(@PathVariable int datasetId, @PathVariable String imageName){
+//        imageName = imageName.contains("mt") ? imageName.replaceAll("mt", "%") : imageName;
+//        Tile image = imageDatasetsService.getImageByName(datasetId, imageName, "visual");
+//        return new CommonResponseDTO<Tile>().success().data(image).message("查询标注影像数据成功");
+//    }
 
     //deleteImageDataSetByIds 未实现删除fastdfs中的数据
     @Log("删除指定id的影像数据集")
@@ -111,89 +83,90 @@ public class ImageDatasetsController extends BaseController {
         return new CommonResponseDTO().success().data(imageDataSetStatisticDTO).message("成功获取影像数据集统计信息");
     }
 
-    @Log("断点上传压缩文件")
-    @RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
-    @ResponseBody
-    @CrossOrigin
-    public CommonResponseDTO uploadFile(MultipartFileParam param, HttpServletRequest request){
-        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
-        CommonResponseDTO commonResponseDTO = null;
 
-        if (isMultipart) {
-            try {
-                commonResponseDTO = (CommonResponseDTO) storageService.uploadFileByMappedByteBuffer(param); //上传
+//    @Log("断点上传压缩文件")
+//    @RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
+//    @ResponseBody
+//    @CrossOrigin
+//    public CommonResponseDTO uploadFile(MultipartFileParam param, HttpServletRequest request){
+//        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+//        CommonResponseDTO commonResponseDTO = null;
+//
+//        if (isMultipart) {
+//            try {
+//                commonResponseDTO = (CommonResponseDTO) storageService.uploadFileByMappedByteBuffer(param); //上传
+//
+//                return commonResponseDTO;
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                log.error("文件上传失败! {}", param.toString());
+//
+//                return new CommonResponseDTO().fail().message("上传失败");
+//            }
+//        } else {
+//            return commonResponseDTO.fail().message("请选择文件上传");
+//        }
+//    }
 
-                return commonResponseDTO;
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.error("文件上传失败! {}", param.toString());
-
-                return new CommonResponseDTO().fail().message("上传失败");
-            }
-        } else {
-            return commonResponseDTO.fail().message("请选择文件上传");
-        }
-    }
-
-    /**
-     * 秒传判断，断点判断
-     */
-    @Log("秒传判断，断点判断")
-    @RequestMapping(value = "checkFileMd5", method = RequestMethod.GET)
-    @ResponseBody
-    @CrossOrigin
-    public Object checkFileMd5(String md5) throws IOException {
-        CommonResponseDTO<ResultVo> commonResponseDTO = new CommonResponseDTO<>();
-
-        Object processingObj = stringRedisTemplate.opsForHash()
-                .get(Constants.FILE_UPLOAD_STATUS, md5);    //上传文件的状态
-
-        if (processingObj == null) {    //该文件从未上传
-//            return new ResultVo(ResultStatus.NO_HAVE);
-            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.NO_HAVE));
-            commonResponseDTO.setMessage("文件未上传,马上上传");
-
-            return commonResponseDTO;
-        }
-
-        String processingStr = processingObj.toString();
-        boolean processing = Boolean.parseBoolean(processingStr);
-        String value = stringRedisTemplate.opsForValue()
-                .get(Constants.FILE_MD5_KEY + md5); //文件所在路径
-
-        if (processing) {   //上传完成
-            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.IS_HAVE));
-            commonResponseDTO.setMessage("文件已经上传");
-
-            return commonResponseDTO;
-        } else {    //上传未完成
-            File confFile = new File(value);
-            byte[] completeList = FileUtils.readFileToByteArray(confFile);
-            List<String> missChunkList = new LinkedList<>();    //文件未上传的部分
-
-            for (int i = 0; i < completeList.length; i++) {
-                if (completeList[i] != Byte.MAX_VALUE) {
-                    missChunkList.add(i + "");
-                }
-            }
-
-            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.ING_HAVE));
-            commonResponseDTO.setMessage("文件上传一部分，开始断点续传");
-
-            return commonResponseDTO;
-        }
-    }
-
-    /*
-    * 根据名称下载
-    * */
-    @Log("下载")
-    @RequestMapping("/download")
-    public CommonResponseDTO download(TileInfosDO tileInfosDO) throws IOException, MyException {
-        storageService.download(tileInfosDO);
-
-        return new CommonResponseDTO().success().message("下载完成");
-    }
+//    /**
+//     * 秒传判断，断点判断
+//     */
+//    @Log("秒传判断，断点判断")
+//    @RequestMapping(value = "checkFileMd5", method = RequestMethod.GET)
+//    @ResponseBody
+//    @CrossOrigin
+//    public Object checkFileMd5(String md5) throws IOException {
+//        CommonResponseDTO<ResultVo> commonResponseDTO = new CommonResponseDTO<>();
+//
+//        Object processingObj = stringRedisTemplate.opsForHash()
+//                .get(Constants.FILE_UPLOAD_STATUS, md5);    //上传文件的状态
+//
+//        if (processingObj == null) {    //该文件从未上传
+////            return new ResultVo(ResultStatus.NO_HAVE);
+//            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.NO_HAVE));
+//            commonResponseDTO.setMessage("文件未上传,马上上传");
+//
+//            return commonResponseDTO;
+//        }
+//
+//        String processingStr = processingObj.toString();
+//        boolean processing = Boolean.parseBoolean(processingStr);
+//        String value = stringRedisTemplate.opsForValue()
+//                .get(Constants.FILE_MD5_KEY + md5); //文件所在路径
+//
+//        if (processing) {   //上传完成
+//            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.IS_HAVE));
+//            commonResponseDTO.setMessage("文件已经上传");
+//
+//            return commonResponseDTO;
+//        } else {    //上传未完成
+//            File confFile = new File(value);
+//            byte[] completeList = FileUtils.readFileToByteArray(confFile);
+//            List<String> missChunkList = new LinkedList<>();    //文件未上传的部分
+//
+//            for (int i = 0; i < completeList.length; i++) {
+//                if (completeList[i] != Byte.MAX_VALUE) {
+//                    missChunkList.add(i + "");
+//                }
+//            }
+//
+//            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.ING_HAVE));
+//            commonResponseDTO.setMessage("文件上传一部分，开始断点续传");
+//
+//            return commonResponseDTO;
+//        }
+//    }
+//
+//    /*
+//    * 根据名称下载
+//    * */
+//    @Log("下载")
+//    @RequestMapping("/download")
+//    public CommonResponseDTO download(TileInfosDO tileInfosDO) throws IOException, MyException {
+//        storageService.download(tileInfosDO);
+//
+//        return new CommonResponseDTO().success().message("下载完成");
+//    }
 
 //    /*
 //    * 根据名称查询

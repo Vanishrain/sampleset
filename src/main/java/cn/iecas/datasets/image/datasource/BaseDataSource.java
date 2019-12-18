@@ -1,7 +1,7 @@
 package cn.iecas.datasets.image.datasource;
 
-import cn.iecas.datasets.image.pojo.dto.ImageSetDTO;
-import cn.iecas.datasets.image.pojo.entity.Image;
+import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
+import cn.iecas.datasets.image.pojo.entity.Tile;
 
 public interface BaseDataSource {
     /**
@@ -26,7 +26,7 @@ public interface BaseDataSource {
      * @param imageName
      * @return
      */
-    Image getImageByName(int imageSetId, String imageName);
+    Tile getImageByName(int imageSetId, String imageName);
 
     /**
      * 根据切片名称删除数据集中的切片
@@ -43,6 +43,6 @@ public interface BaseDataSource {
      * @param pageSize
      * @return
      */
-    ImageSetDTO getImages(int imageSetId, int pageNo, int pageSize);
+    TileSetDTO getImages(int imageSetId, int pageNo, int pageSize);
 
 }

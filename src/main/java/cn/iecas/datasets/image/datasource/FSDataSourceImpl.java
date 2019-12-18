@@ -1,7 +1,7 @@
 //package cn.iecas.datasets.image.datasource;
 //
-//import cn.iecas.datasets.image.pojo.dto.ImageSetDTO;
-//import cn.iecas.datasets.image.pojo.entity.Image;
+//import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
+//import cn.iecas.datasets.image.pojo.entity.Tile;
 //import lombok.extern.slf4j.Slf4j;
 //import org.apache.commons.io.FilenameUtils;
 //import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@
 //    }
 //
 //    @Override
-//    public ImageSetDTO getImages(String path) {
+//    public TileSetDTO getImages(String path) {
 //        return getImages(path, 1, 10);
 //    }
 //
@@ -35,26 +35,26 @@
 //    }
 //
 //    @Override
-//    public Image getImageByName(String path, String imageName) {
-//        Image image = new Image();
+//    public Tile getImageByName(String path, String imageName) {
+//        Tile image = new Tile();
 //        String imageFilePath = FilenameUtils.normalize(path + File.separator + imageName);
-//        String base64Image = getImageBase64(imageFilePath);
+//        String base64Tile = getImageBase64(imageFilePath);
 //        image.setName(imageName);
-//        image.setBase64Image(base64Image);
+//        image.setBase64Tile(base64Tile);
 //        return image;
 //    }
 //
 //
 //    @Override
-//    public ImageSetDTO getImages(String path, int pageNo, int pageSize) {
-//        ImageSetDTO imageSetDTO = new ImageSetDTO();
+//    public TileSetDTO getImages(String path, int pageNo, int pageSize) {
+//        TileSetDTO imageSetDTO = new TileSetDTO();
 //        pageNo = pageNo != 0 ? pageNo : 1;
 //        pageSize = pageSize !=0 ? pageSize : 10;
-//        List<Image> imageList = new ArrayList<>();
+//        List<Tile> tileList = new ArrayList<>();
 //
 //        List<String> imagePathList = getImagePaths(path, pageNo, pageSize);
 //        for (String imagePath : imagePathList){
-//            Image image = new Image();
+//            Tile image = new Tile();
 //            File file = new File(imagePath);
 //            String fileName = file.getName().substring(0,file.getName().indexOf("."));
 //            if(fileName.contains("%"))
@@ -63,12 +63,12 @@
 //            String imageBase64 = getImageBase64(imagePath);
 //
 //            image.setName(fileName);
-//            image.setBase64Image(imageBase64);
-//            imageList.add(image);
+//            image.setBase64Tile(imageBase64);
+//            tileList.add(image);
 //        }
 //
 //        imageSetDTO.setPageNo(pageNo);
-//        imageSetDTO.setImageList(imageList);
+//        imageSetDTO.setTileList(tileList);
 //
 //        return imageSetDTO;
 //    }

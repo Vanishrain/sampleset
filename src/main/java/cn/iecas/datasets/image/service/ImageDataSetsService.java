@@ -3,10 +3,10 @@ package cn.iecas.datasets.image.service;
 
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
-import cn.iecas.datasets.image.pojo.dto.ImageSetDTO;
-import cn.iecas.datasets.image.pojo.dto.ImageRequestDTO;
+import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
+import cn.iecas.datasets.image.pojo.dto.TileRequestDTO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
-import cn.iecas.datasets.image.pojo.entity.Image;
+import cn.iecas.datasets.image.pojo.entity.Tile;
 
 import java.util.List;
 
@@ -32,14 +32,14 @@ public interface ImageDataSetsService {
      * @param imageName
      * @return
      */
-    Image getImageByName(int imageDataSetId, String imageName, String type);
+    Tile getImageByName(int imageDataSetId, String imageName, String type);
 
     /**
      * 根据影像数据集id获取分页影像
-     * @param imageRequestDTO 获取影像请求参数
+     * @param tileRequestDTO 获取影像请求参数
      * @return 影像数据信息
      */
-    ImageSetDTO listImagesByDataSetId(ImageRequestDTO imageRequestDTO);
+    TileSetDTO listImagesByDataSetId(TileRequestDTO tileRequestDTO);
 
     /**
      * 获取影像数据集详细信息

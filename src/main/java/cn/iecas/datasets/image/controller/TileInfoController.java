@@ -2,11 +2,8 @@ package cn.iecas.datasets.image.controller;
 
 import cn.iecas.datasets.image.annotation.Log;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
-import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
-import cn.iecas.datasets.image.pojo.dto.TileInfoAllStatisticResponseDTO;
-import cn.iecas.datasets.image.pojo.dto.TileInfoStatParamsDTO;
-import cn.iecas.datasets.image.pojo.dto.TileInfoStatisticResponseDTO;
-import cn.iecas.datasets.image.pojo.entity.TileInfoStatistic;
+import cn.iecas.datasets.image.pojo.dto.*;
+import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.service.TileInfosService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,21 +14,34 @@ import java.util.List;
 
 @RestController
 @Slf4j
-@RequestMapping("/tileinfo")
+@RequestMapping("/tiles")
 public class TileInfoController {
 
     @Autowired
     TileInfosService tileInfosService;
-    /**
-     * http://localhost:28000/geoapi/V1/datasets/tileinfo/add
-     * 批量添加切片数据
-     * @param tileInfoDOS
-     * @return
-     */
+
+
+    //listTilesByDataSetId方法未实现
+    @Log("分页查询切片数据")
+    @GetMapping()
+    public CommonResponseDTO listImagesByDatasetId(TileRequestDTO tileRequestDTO){
+        TileSetDTO tileSetDTO = tileInfosService.listTilesByDataSetId(tileRequestDTO);
+        return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
+    }
+
+
+    //getTileByName方法未实现
+    @Log("查询指定数据集指定名称的影像")
+    @GetMapping(value = "/{datasetId}/{tileName}")
+    public CommonResponseDTO<Tile> getImageByName(@PathVariable int datasetId, @PathVariable String tileName){
+        Tile tile = tileInfosService.getTileByName(datasetId, tileName, "imgs");
+        return new CommonResponseDTO<Tile>().success().data(tile).message("查询影像数据成功");
+    }
+
+
     @Log("批量增加切片数据，并且更新对应数据集")
-    @PostMapping(value = "/add")
+    @PostMapping(value = "/upload")
     public CommonResponseDTO addTileinfos(@RequestBody List<TileInfosDO> tileInfoDOS){
-        tileInfosService.insertTileInfos(tileInfoDOS);
         return new CommonResponseDTO().success().message("批量增加切片数据成功");
     }
 
