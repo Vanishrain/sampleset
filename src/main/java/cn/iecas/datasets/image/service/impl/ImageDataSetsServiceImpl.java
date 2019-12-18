@@ -121,8 +121,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      * 根据id删除数据集信息和数据
      * @param imageDataSetId
      */
-   @Override
-
+    @Override
     public void deleteImageDataSetById(int imageDataSetId) {
         ImageDataSetInfoDO imageDataSetInfoDO = this.baseMapper.selectById(imageDataSetId);
         int flag = this.baseMapper.deleteById(imageDataSetId);

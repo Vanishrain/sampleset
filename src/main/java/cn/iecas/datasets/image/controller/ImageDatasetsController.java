@@ -45,6 +45,7 @@ public class ImageDatasetsController extends BaseController {
     @Autowired
     ImageDataSetsService imageDatasetsService;
 
+    //从fastdfs中获取数据未实现
     @Log("分页查询数据集影像")
     @GetMapping(value = "/images")
     public CommonResponseDTO listImagesByDatasetId(ImageRequestDTO imageRequestDTO){
@@ -52,6 +53,8 @@ public class ImageDatasetsController extends BaseController {
         return new CommonResponseDTO().success().data(imageSetDTO).message("查询影像数据成功");
     }
 
+    
+    //从fastdfs中获取数据未实现
     @Log("查询指定数据集指定名称的影像")
     @GetMapping(value = "/images/{datasetId}/{imageName}")
     public CommonResponseDTO<Image> getImageByName(@PathVariable int datasetId, @PathVariable String imageName){
@@ -73,7 +76,7 @@ public class ImageDatasetsController extends BaseController {
         return new CommonResponseDTO<Image>().success().data(image).message("查询标注影像数据成功");
     }
 
-    //deleteImageDataSetByIds 未实现
+    //deleteImageDataSetByIds 未实现删除fastdfs中的数据
     @Log("删除指定id的影像数据集")
     @DeleteMapping(value = "/{idList}")
     public CommonResponseDTO deleteImageDataSetById(@PathVariable String idList) throws Exception {
