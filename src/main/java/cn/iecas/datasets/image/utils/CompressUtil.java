@@ -31,7 +31,7 @@ public class CompressUtil {
 
         //获取压缩文件内的内容,并且返回需要解压的 tif 和 tiff 类型的文件名
         List<String> resultList = getFileNameList(srcPath, decompressCmdList, filePostfix);
-        String decompressCmd = getDecompressCmd(srcPath, destPath, decompressCmdPrefix, resultList);
+        String decompressCmd = getDecompressCmd(srcPath, destPath, decompressCmdPrefix);
 
         try {
             Process process = Runtime.getRuntime().exec(decompressCmd); //执行解压命令
@@ -123,7 +123,6 @@ public class CompressUtil {
                 }
             }
 
-            // System.out.println(resultList.toString());
             logger.info("文件:{} 列表获取完毕", srcPath);
         }catch (IOException e) {
             e.printStackTrace();
@@ -142,26 +141,20 @@ public class CompressUtil {
     * */
     public static String getDecompressCmd(String srcPath,
                                           String destPath,
-                                          String decompressCmdPrefix,
-                                          List<String> resultList){
+                                          String decompressCmdPrefix){
         String decomporessCmd;
-        String subFileName=" ";
-
-        for(String temp : resultList){
-            subFileName = String.format(" %s %s ",subFileName, temp);   //压缩包内文件
-        }
 
         if(FilenameUtils.isExtension(srcPath,"rar") ) {
-            decomporessCmd = String.format("%s %s %s %s", decompressCmdPrefix, srcPath, subFileName, destPath);
+            decomporessCmd = String.format("%s %s %s", decompressCmdPrefix, srcPath, destPath);
 
             return  decomporessCmd;
         }
         if (FilenameUtils.isExtension(srcPath,"zip")) {
-            decomporessCmd = String.format("%s  %s %s  -d %s",decompressCmdPrefix, srcPath,subFileName, destPath);
+            decomporessCmd = String.format("%s  %s   -d %s",decompressCmdPrefix, srcPath, destPath);
             return  decomporessCmd;
         }
         if(FilenameUtils.isExtension(srcPath,"tar") ){
-            decomporessCmd = String.format("%s  %s  -f %s  %s",decompressCmdPrefix , destPath, srcPath,subFileName);
+            decomporessCmd = String.format("%s  %s  %s",decompressCmdPrefix , destPath, srcPath);
             return  decomporessCmd;
         }
 

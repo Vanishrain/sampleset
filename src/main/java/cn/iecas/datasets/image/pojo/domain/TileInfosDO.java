@@ -18,6 +18,7 @@ public class TileInfosDO {
     Integer taskid;
     String dataPath;
     String labelPath;
+    String visualPath;
     Double resolution;
     String sensor;
     Integer band;

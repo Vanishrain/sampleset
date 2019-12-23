@@ -8,12 +8,14 @@
         <outputRelativeToContentRoot value="true" />
         <module name="datasetsimage" />
         <module name="datasets-image" />
+        <module name="datasets-tile" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="datasets-image" options="-parameters" />
+      <module name="datasets-tile" options="-parameters" />
       <module name="datasetsimage" options="-parameters" />
     </option>
   </component>

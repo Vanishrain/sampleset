@@ -56,7 +56,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
 
     @Override
     public Tile getImageByName(int imageDataSetId, String imageName, String type) {
-        return baseDataSource.getImageByName(imageDataSetId, imageName);
+        return baseDataSource.getImageByName(imageName);
     }
 
     /**
@@ -74,7 +74,13 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
             return new TileSetDTO();
         }
 
-        TileSetDTO tileSetDTO = baseDataSource.getImages(imageDatasetId, tileRequestDTO.getPageNo(), tileRequestDTO.getPageSize());
+        List<String> imagePathList = (List<String>) tileInfosMapper.getAll(new Page(tileRequestDTO.getPageNo(), tileRequestDTO.getPageSize()), tileRequestDTO.getImageDatasetId());
+        TileSetDTO tileSetDTO = null;
+        try {
+            tileSetDTO = baseDataSource.getImages(imagePathList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         tileSetDTO.setTotalCount(imageDataSetInfoDO.getNumber());
         return tileSetDTO;
     }

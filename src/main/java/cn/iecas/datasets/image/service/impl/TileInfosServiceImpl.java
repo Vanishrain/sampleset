@@ -2,15 +2,18 @@ package cn.iecas.datasets.image.service.impl;
 
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
+import cn.iecas.datasets.image.datasource.BaseDataSource;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.DatasetTileInfoStatistic;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.TileInfoStatistic;
 import cn.iecas.datasets.image.service.TileInfosService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +25,16 @@ import java.util.List;
 @Service
 @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
 public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfosDO> implements TileInfosService {
-
+    @Value("${value.fastdfsServer}")
+    private String fastdfsServer;   //FastDFS服务路径
 
     @Autowired
     ImageDatasetMapper imageDatasetMapper;
+    @Autowired
+    TileInfosMapper tileInfosMapper;
+    @Autowired
+    BaseDataSource baseDataSource;
+
     @Override
     public void insertTileInfo(TileInfosDO tileInfoDO) {
         this.baseMapper.insertTilesInfo(tileInfoDO);
@@ -38,20 +47,41 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
         log.info("成功插入切片数据imagesetid:{}",tileInfoDO.getImagesetid());
     }
 
-
     @Override
     public TileSetDTO listTilesByDataSetId(TileRequestDTO tileRequestDTO) {
-        return null;
+        Page<String> page = new Page<>();
+        page.setCurrent(tileRequestDTO.getPageNo());
+        page.setSize(tileRequestDTO.getPageSize());
+        List<String> imagePathList = tileInfosMapper.getAll(page,tileRequestDTO.getImageDatasetId()).getRecords();
+        TileSetDTO tileSetDTO = null;
+        try {
+            tileSetDTO = baseDataSource.getImages(imagePathList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        /*
+        * TODO
+        *  补充其他参数（pageNo、totalCount）
+        * */
+        return tileSetDTO;
     }
 
     @Override
-    public Tile getTileByName(int dataSetId, String tileName, String type) {
-        return null;
+    public Tile getTileByName(String tileId, String type){
+        /*
+        * TODO
+        *  String type(imgs、visual、xmls)
+        *  根据文件类型查询对应的信息返回
+        * */
+        String visualPath = tileInfosMapper.getVisualPath(Integer.valueOf(tileId));
+        return baseDataSource.getImageByName(visualPath);
     }
 
 
     /**
-     * 根据数据集id返回返回属于该id的切片的年月日数据增长信息，当不指定imagesetidPre是则默认返回全部。
+     * 根据数据集id返回
+     * 返回属于该id的切片的年月日数据增长信息，当不指定imagesetidPre是则默认返回全部。
      * @param tileInfoStatParamsDTO
      * @return
      */

@@ -39,7 +39,7 @@ spring:
 
 #mybatis plus 设置
 mybatis-plus:
-  type-aliases-package: cn.iecas.datasets.image.pojo
+  type-aliases-package: cn.iecas.datasets.image.pojo,cn.iecas.datasets.image.pojo.domain
   mapper-locations: classpath:mapper/*.xml
   configuration:
     jdbc-type-for-null: null
@@ -53,9 +53,9 @@ datasource:
 
 value:
   dir:
-    monitorDir: D:\\SJCP\\YXCP_YGYX\\IMG\\  #监控路径
+    monitorDir: D:\\JCP\\YXCP_YGYX\\IMG\\  #上传路径
     decompressRootDir: data\\fastdfs\\data\\ #/data/fastdfs/data/
-    decompressImgDir: D:\\YXCP_YGYX\\IMG\\  #YXCP_YGYX\IMG\\
+    decompressImgDir: D:\\YXCP_YGYX\\IMG\\  #解压路径
     decompressThumbnailL: YXCP_YGYX\SLT\\
     decompressThumbnailS: YXCP_YGYX\MZT\\
   decompressCmd:

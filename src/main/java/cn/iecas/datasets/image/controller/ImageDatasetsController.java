@@ -2,6 +2,7 @@ package cn.iecas.datasets.image.controller;
 
 import cn.iecas.datasets.image.annotation.Log;
 import cn.iecas.datasets.image.common.controller.BaseController;
+import cn.iecas.datasets.image.datasource.BaseDataSource;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import javax.sql.DataSource;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,6 +34,8 @@ public class ImageDatasetsController extends BaseController {
     @Autowired
     ImageDataSetsService imageDatasetsService;
 
+    @Autowired
+    BaseDataSource baseDataSource;
 
 
     @Log("查询影像数据集信息详情")

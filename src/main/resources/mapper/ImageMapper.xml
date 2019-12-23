@@ -2,18 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="cn.iecas.datasets.tile.dao.ImageDatasetMapper">
-    <select id="getImageDataSetById" resultType="cn.iecas.datasets.tile.pojo.domain.ImageDataSetInfoDO">
+<mapper namespace="cn.iecas.datasets.image.dao.ImageDatasetMapper">
+    <select id="getImageDataSetById" resultType="cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO">
         select * from image_infos
         where id = #{id}
     </select>
-    <update id="updateNumber" parameterType="cn.iecas.datasets.tile.pojo.domain.ImageDataSetInfoDO">
+    <update id="updateNumber" parameterType="cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO">
         update image_infos
         set number = #{number}
         where id = #{id}
     </update>
     
-    <select id="listImageDataSetInfos" resultType="cn.iecas.datasets.tile.pojo.domain.ImageDataSetInfoDO" parameterType="cn.iecas.datasets.tile.pojo.dto.ImageDataSetInfoRequestDTO">
+    <select id="listImageDataSetInfos" resultType="cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO" parameterType="cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO">
         SELECT * FROM image_infos
         <where>
             <if test="imageDatasetInfoRequestDTO.id!=0">
@@ -33,11 +33,11 @@
         </where>
     </select>
 
-    <select id="getStatistic" resultType="cn.iecas.datasets.tile.pojo.entity.Statistic">
+    <select id="getStatistic" resultType="cn.iecas.datasets.image.pojo.entity.Statistic">
         select id, targetNum from image_infos
     </select>
 
-    <insert id="insertDataset" parameterType="cn.iecas.datasets.tile.pojo.domain.ImageDataSetInfoDO">
+    <insert id="insertDataset" parameterType="cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO">
         INSERT INTO image_infos(path,description,attribute,datasource,bit,band,datasize,definition,size,number,postfix,labelsize,labeldescription,labelpostfix,direction,construction,datatime,name,category)
         values (#{path},#{description},#{attribute},#{datasource},#{bit},#{band},#{datasize},#{definition},#{size},#{number},#{postfix},#{labelsize},#{labeldescription},#{labelpostfix},#{direction},#{construction},#{datatime},#{name},#{category})
     </insert>

@@ -11,7 +11,7 @@ import java.util.List;
 public interface TileInfosService {
     void insertTileInfo(TileInfosDO tileInfosDO);
     TileSetDTO listTilesByDataSetId(TileRequestDTO tileRequestDTO);
-    Tile getTileByName(int dataSetId, String tileName, String type);
+    Tile getTileByName(String tileId, String type);
     TileInfoAllStatisticResponseDTO getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO);
     TileInfoStatisticResponseDTO getStatisticByIds(TileInfoStatParamsDTO tileInfoStatParamsDTO);
 

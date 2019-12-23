@@ -1,6 +1,5 @@
 package cn.iecas.datasets.image.service.impl;
 
-import cn.iecas.datasets.image.common.domain.QueryRequest;
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
@@ -12,11 +11,11 @@ import cn.iecas.datasets.image.utils.CompressUtil;
 import cn.iecas.datasets.image.utils.Constants;
 import cn.iecas.datasets.image.utils.FastDFSUtil;
 import cn.iecas.datasets.image.utils.FileMD5Util;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.csource.fastdfs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,28 +23,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import sun.misc.BASE64Encoder;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class StorageServiceImpl implements StorageService {
 
     private final Logger logger = LoggerFactory.getLogger(StorageServiceImpl.class);
 
     @Value("${value.dir.monitorDir}")
     private Path rootPath;  // 本地保存文件的目录
-
-    @Value("${value.dir.decompressImgDir}")
-    private Path decompressRootDir; //解压目录
 
     @Value("${breakpoint.upload.chunkSize}")
     private long CHUNK_SIZE;    //文件分块大小(必须与前端设定的值一致)
@@ -71,7 +65,7 @@ public class StorageServiceImpl implements StorageService {
     @Value("${value.fastdfsServer}")
     private String fastdfsServer;   //FastDFS服务路径
     @Value("${value.downloadPath}")
-    private String downloadPath;
+    private String downloadPath;    //下载路径
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
@@ -89,80 +83,23 @@ public class StorageServiceImpl implements StorageService {
     * 上传文件
     * */
     @Override
-    public Object uploadFileByMappedByteBuffer(MultipartFileParam param) throws IOException {
-        String fileId = "";
-        String fileName = param.getName();
-        String uploadDirPath = rootPath + "\\" + param.getMd5();   //上传文件所在目录
-        String decompressDirPath = decompressRootDir.toString();  //解压文件所在路径
-        String tempFileName = fileName + "_temp";
-        File tmpDir = new File(uploadDirPath);
-        File tmpFile = new File(uploadDirPath, tempFileName);
+    public Object uploadTiles(MultipartFileParam param, HttpServletRequest request) {
+        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+        CommonResponseDTO commonResponseDTO = null;
 
-        if (!tmpDir.exists()) {
-            tmpDir.mkdirs();
-        }
+        if (isMultipart) {
+            try {
+                uploadFileByMappedByteBuffer(param); //上传过程
+                return new CommonResponseDTO().success().message("批量增加切片数据成功");
+            } catch (IOException e) {
+                e.printStackTrace();
+                log.error("文件上传失败! {}", param.toString());
 
-        RandomAccessFile tempRaf = new RandomAccessFile(tmpFile, "rw");
-        FileChannel fileChannel = tempRaf.getChannel();
-
-        /*
-        * 写入分片数据
-        */
-        long offset = CHUNK_SIZE * param.getChunk();
-        byte[] fileData = param.getFile().getBytes();   //文件分片转为字节数组
-        MappedByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, offset, fileData.length);
-        mappedByteBuffer.put(fileData);
-        // 释放
-        FileMD5Util.freedMappedByteBuffer(mappedByteBuffer);
-        fileChannel.close();
-
-        boolean isOk = checkAndSetUploadProgress(param, uploadDirPath); //检查并修改文件上传进度
-        if (isOk) { //分片上传完成
-            boolean flag = renameFile(tmpFile, fileName);   //临时文件重命名
-            FileUtils.forceDelete(new File(uploadDirPath, fileName + ".conf")); //删除进度文件
-            System.out.println("upload complete !!" + flag + " name=" + fileName);
-
-            /*
-             * 解压
-             * */
-            String decompressCmdPrefix = getDecompressCmdPrefix(fileName);  //解压命令前缀
-            String decompressCmdListPrefix = getDecompressCmdListPrefix(fileName);  //解压列表命令前缀
-            String srcPath =  tmpDir + "\\" + fileName;
-            String destPath = decompressDirPath;
-            //获得压缩文件列表
-            List<String> decompressedFile = CompressUtil.decompress(srcPath, destPath,
-                    decompressCmdPrefix,    //解压
-                    decompressCmdListPrefix,    //列表
-                    imageFilePostfix);
-
-            /*
-             * 上传至服务器
-             * 批量
-             * */
-            File file = null;
-            String tileFilePath = decompressDirPath + "\\";
-            TileInfosDO tileInfosDO = new TileInfosDO();
-            ImageDataSetInfoDO imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(35);
-            int fileFileCount = imageDataSetInfoDO.getNumber();
-            /*
-            * FastDFS上传并入库
-            * */
-            for (String tileFile : decompressedFile){
-                file = new File(tileFilePath + tileFile);
-                fileId = (String) FastDFSUtil.upload(file); //文件所在服务器的路径
-
-                tileInfosDO.setDataPath(StringUtils.substringAfter(tileFile, "\\"));  //文件名
-                tileInfosDO.setImagesetid(35);
-                tileInfosDO.setStoragePath(fileId); //存储路径
-                //态势信息入库(新增)
-                tileInfosMapper.insertTilesInfo(tileInfosDO);
-                //图像信息更新(number)
-                imageDataSetInfoDO.setNumber(fileFileCount++);
-                imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+                return new CommonResponseDTO().fail().message("上传失败");
             }
+        } else {
+            return commonResponseDTO.fail().message("请选择文件上传");
         }
-
-        return new CommonResponseDTO().success().message("文件上传成功");
     }
 
     /*
@@ -170,7 +107,7 @@ public class StorageServiceImpl implements StorageService {
     * */
     @Override
     public void download(TileInfosDO tileInfosDO) {
-        String targetFilePath = tileInfosMapper.getStoragePath(tileInfosDO);
+        String targetFilePath = tileInfosMapper.getStoragePath(tileInfosDO.getVisualPath());
 
         try {
             String fdfsConf = "src/main/resources/fdfs_client.conf";
@@ -192,75 +129,6 @@ public class StorageServiceImpl implements StorageService {
         } finally {
             FastDFSUtil.closeConnection();
         }
-    }
-
-    /*
-    * 按名称查询
-    * */
-    public String getByName(TileInfosDO tileInfosDO) throws IOException {
-        String storagePath = tileInfosMapper.getStoragePath(tileInfosDO);
-        String urlString = "http://" + fastdfsServer + "/" + storagePath;
-
-        URL url = new URL(urlString);   //构造URL
-        URLConnection urlConnection = url.openConnection(); //打开连接
-        InputStream in = urlConnection.getInputStream();
-        byte[] imageData = null;
-        try {
-            imageData = new byte[in.available()];
-            in.read(imageData);
-            in.close();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        BASE64Encoder encoder = new BASE64Encoder();
-        String imageDataString = encoder.encode(imageData);
-
-        return "data:image/jpeg;base64," + imageDataString;
-    }
-
-    /*
-    * 查询所有
-    * */
-    public List<String> getAll(QueryRequest request) throws IOException {
-        List<String> result = new ArrayList<>();
-        String urlStringPrefix = "http://" + fastdfsServer + "/";
-        String urlString;
-        Page<String> page = new Page<>();
-        page.setCurrent(request.getPageNo());
-        page.setSize(request.getPageSize());
-
-        IPage<String> storagePaths = tileInfosMapper.getAll(page,request);
-
-        URL url;
-        URLConnection urlConnection;
-        byte[] imageData;
-        InputStream in = null;
-        BASE64Encoder encoder = new BASE64Encoder();
-
-        for (int i=0; i<storagePaths.getSize(); i++){
-            urlString = urlStringPrefix + storagePaths.getRecords().get(i);
-            url = new URL(urlString);
-            urlConnection = url.openConnection();
-            in = urlConnection.getInputStream();
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            try {
-                int length = 0;
-                imageData = new byte[1024];
-                while((length = in.read(imageData)) != -1){ //读取文件
-                    byteArrayOutputStream.write(imageData,0,length);
-                }
-                imageData = byteArrayOutputStream.toByteArray();
-                String encodedimageData = encoder.encode(imageData);
-                String imageBase64String = "data:image/jpeg;base64," + encodedimageData;
-                result.add(imageBase64String);
-
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-        in.close();
-
-        return result;
     }
 
     /**
@@ -340,15 +208,10 @@ public class StorageServiceImpl implements StorageService {
      */
     private String getDecompressCmdPrefix(String fileName){
         if(FilenameUtils.isExtension(fileName,"rar") )
-            // decomporessCmd=String.format("%s %s %s",this.jobInfo.getDecompressRarCmd(),srcPath,desPath);
-
             return  decompressRarCmd;
         if (FilenameUtils.isExtension(fileName,"zip"))
-            //comporessCmd =String.format("%s  %s  -d %s",this.jobInfo.getDecompressZipCmd(),srcPath,desPath);
-
             return decompressZipCmd;
 
-        //comporessCmd=String.format("%s %s -C %s",this.jobInfo.getDecompressTarCmd(),srcPath,desPath);
         return decompressTarCmd;
     }
 
@@ -368,6 +231,126 @@ public class StorageServiceImpl implements StorageService {
 
         //compressCmdList=String.format("%s %s ",this.jobInfo.getDecompressTarList(),srcPath);
         return decompressTarList;
+    }
+
+    /*
+     * 上传文件过程
+     * */
+    private Object uploadFileByMappedByteBuffer(MultipartFileParam param) throws IOException {
+        String fileName = param.getName();
+        String uploadDirPath = rootPath + "\\" + param.getMd5();   //上传文件所在目录
+        String decompressDirPath = uploadDirPath;  //解压文件所在路径
+        String tempFileName = fileName + "_temp";
+        File tmpDir = new File(uploadDirPath);
+        File tmpFile = new File(uploadDirPath, tempFileName);
+
+        if (!tmpDir.exists()) {
+            tmpDir.mkdirs();
+        }
+
+        RandomAccessFile tempRaf = new RandomAccessFile(tmpFile, "rw");
+        FileChannel fileChannel = tempRaf.getChannel();
+
+        /*
+         * 写入分片数据
+         */
+        long offset = CHUNK_SIZE * param.getChunk();
+        byte[] fileData = param.getFile().getBytes();   //文件分片转为字节数组
+        MappedByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, offset, fileData.length);
+        mappedByteBuffer.put(fileData);
+        // 释放
+        FileMD5Util.freedMappedByteBuffer(mappedByteBuffer);
+        fileChannel.close();
+
+        boolean isOk = checkAndSetUploadProgress(param, uploadDirPath); //检查并修改文件上传进度
+        if (isOk) { //分片上传完成
+            boolean flag = renameFile(tmpFile, fileName);   //临时文件重命名
+            FileUtils.forceDelete(new File(uploadDirPath, fileName + ".conf")); //删除进度文件
+            System.out.println("upload complete !!" + flag + " name=" + fileName);
+
+            /*
+             * 解压
+             * */
+            String decompressCmdPrefix = getDecompressCmdPrefix(fileName);  //解压命令前缀
+            String decompressCmdListPrefix = getDecompressCmdListPrefix(fileName);  //解压列表命令前缀
+            String srcPath =  tmpDir + "\\" + fileName;
+            String destPath = decompressDirPath;
+            //获得压缩文件列表
+            List<String> decompressedFile = CompressUtil.decompress(srcPath, destPath,
+                    decompressCmdPrefix,    //解压
+                    decompressCmdListPrefix,    //列表
+                    imageFilePostfix);
+
+            /*
+             * 上传至服务器
+             * */
+            File file = null;
+            TileInfosDO tileInfosDO = new TileInfosDO();
+            ImageDataSetInfoDO imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(35);
+            int fileFileCount = imageDataSetInfoDO.getNumber(); //上传文件数量
+            FileInputStream imgFis = null;
+            FileInputStream visualFis = null;
+            FileInputStream xmlFis = null;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            String tileFileRootDirPath = decompressDirPath + "\\car";   //"D:\\JCP\\YXCP_YGYX\\IMG\\d2d540edd0a8cd41071aad778b98a6e3\\car";
+            String imgsDir = tileFileRootDirPath + "\\imgs";
+            String visualDir = tileFileRootDirPath + "\\visual";
+            String xmlsDir = tileFileRootDirPath + "\\xmls";
+
+            File[] imgs = new File(imgsDir).listFiles();
+            int len = imgs.length;
+            for (int i=0; i<len; i++){
+                File imgFile = imgs[i]; //img
+                String imgName = imgFile.getName();
+                String commonName = imgName.substring(0, imgName.lastIndexOf("."));
+
+                File visualFile = new File(visualDir + "\\" + commonName + ".jpg");
+                File xmlFile = new File(xmlsDir + "\\" + commonName + ".xml");
+
+                /*
+                * 上传文件
+                * */
+                imgFis = new FileInputStream(imgFile);
+                visualFis = new FileInputStream(visualFile);
+                xmlFis = new FileInputStream(xmlFile);
+                String storagePath = (String) FastDFSUtil.upload(imgFile, imgFis, baos);
+                String visualPath = (String) FastDFSUtil.upload(visualFile, visualFis, baos);
+                String labelPath = (String) FastDFSUtil.upload(xmlFile, xmlFis, baos);
+
+                /*
+                * 信息入库
+                * */
+                tileInfosDO.setStoragePath(storagePath);
+                tileInfosDO.setVisualPath(visualPath);
+                tileInfosDO.setLabelPath(labelPath);
+                tileInfosDO.setImagesetid(35);
+                tileInfosDO.setDataPath(imgName);
+                //态势信息入库(新增)
+                tileInfosMapper.insertTilesInfo(tileInfosDO);
+                //图像信息更新(number)
+                imageDataSetInfoDO.setNumber(fileFileCount++);
+                imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+            }
+
+            /*for (String tileFile : decompressedFile){
+                file = new File(tileFilePath + tileFile);
+                fis = new FileInputStream(file);
+                fileId = (String) FastDFSUtil.upload(file, fis, baos); //上传后返回文件所在服务器的路径
+
+                tileInfosDO.setDataPath(StringUtils.substringAfter(tileFile, "\\"));  //文件名
+                tileInfosDO.setImagesetid(35);
+                tileInfosDO.setStoragePath(fileId); //源文件存储路径
+
+                //态势信息入库(新增)
+                tileInfosMapper.insertTilesInfo(tileInfosDO);
+                //图像信息更新(number)
+                imageDataSetInfoDO.setNumber(fileFileCount++);
+                imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+            }*/
+        }
+
+        return new CommonResponseDTO().success().message("文件上传成功");
     }
 
 }

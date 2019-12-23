@@ -9,9 +9,9 @@ import java.util.Date;
  */
 @Data
 public class TileRequestDTO {
-    private Integer pageNo;
+    private Integer pageNo = 1;
 
-    private Integer pageSize;
+    private Integer pageSize = 10;
 
     private Integer imageDatasetId;
 

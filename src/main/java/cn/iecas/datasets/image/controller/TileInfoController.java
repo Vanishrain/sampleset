@@ -1,14 +1,28 @@
 package cn.iecas.datasets.image.controller;
 
 import cn.iecas.datasets.image.annotation.Log;
-import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.Tile;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultStatus;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
+import cn.iecas.datasets.image.service.StorageService;
 import cn.iecas.datasets.image.service.TileInfosService;
+import cn.iecas.datasets.image.utils.Constants;
+import cn.iecas.datasets.image.utils.FastDFSUtil;
+import cn.iecas.datasets.image.utils.FileMD5Util;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.websocket.server.PathParam;
+import java.io.File;
+import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -19,30 +33,38 @@ public class TileInfoController {
 
     @Autowired
     TileInfosService tileInfosService;
+    @Autowired
+    StorageService storageService;
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
 
-
-    //listTilesByDataSetId方法未实现
     @Log("分页查询切片数据")
-    @GetMapping()
+    @GetMapping
     public CommonResponseDTO listImagesByDatasetId(TileRequestDTO tileRequestDTO){
         TileSetDTO tileSetDTO = tileInfosService.listTilesByDataSetId(tileRequestDTO);
         return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
     }
 
-
-    //getTileByName方法未实现
     @Log("查询指定数据集指定名称的影像")
-    @GetMapping(value = "/{datasetId}/{tileName}")
-    public CommonResponseDTO<Tile> getImageByName(@PathVariable int datasetId, @PathVariable String tileName){
-        Tile tile = tileInfosService.getTileByName(datasetId, tileName, "imgs");
+    @GetMapping(value = "/{tileId}/{type}")
+    public CommonResponseDTO<Tile> getImageByName(@PathVariable String tileId, @PathVariable String type ){
+        Tile tile = tileInfosService.getTileByName(tileId, type);
         return new CommonResponseDTO<Tile>().success().data(tile).message("查询影像数据成功");
     }
 
-
     @Log("批量增加切片数据，并且更新对应数据集")
     @PostMapping(value = "/upload")
-    public CommonResponseDTO addTileinfos(@RequestBody List<TileInfosDO> tileInfoDOS){
-        return new CommonResponseDTO().success().message("批量增加切片数据成功");
+    @CrossOrigin
+    public CommonResponseDTO uploadTiles(MultipartFileParam param, HttpServletRequest request){
+        return (CommonResponseDTO) storageService.uploadTiles(param, request);
+    }
+
+
+    @Log("秒传判断，断点判断")
+    @GetMapping(value = "checkFileMd5")
+    @CrossOrigin
+    public CommonResponseDTO checkFileMd5(String md5) {
+        return FileMD5Util.checkFileMd5(md5);
     }
 
 

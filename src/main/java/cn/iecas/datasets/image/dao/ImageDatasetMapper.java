@@ -6,9 +6,11 @@ import cn.iecas.datasets.image.pojo.entity.Statistic;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface ImageDatasetMapper  extends BaseMapper<ImageDataSetInfoDO> {
     List<Statistic> getStatistic();
     ImageDataSetInfoDO getImageDataSetById(int id);

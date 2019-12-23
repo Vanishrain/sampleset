@@ -1,8 +1,16 @@
 package cn.iecas.datasets.image.utils;
 
+import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultStatus;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -14,48 +22,73 @@ import java.nio.channels.FileChannel;
 import java.security.AccessController;
 import java.security.MessageDigest;
 import java.security.PrivilegedAction;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 文件md5值
  */
+@Component
 public class FileMD5Util {
-
     private final static Logger logger = LoggerFactory.getLogger(FileMD5Util.class);
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate1;
+    private static StringRedisTemplate stringRedisTemplate;
 
-    public static String getFileMD5(File file) throws FileNotFoundException {
-        String value = null;
-        FileInputStream in = new FileInputStream(file);
-        MappedByteBuffer byteBuffer = null;
-        try {
-            byteBuffer = in.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-            MessageDigest md5 = MessageDigest.getInstance("MD5");
-            md5.update(byteBuffer);
-            BigInteger bi = new BigInteger(1, md5.digest());
-            value = bi.toString(16);
-            if (value.length() < 32) {
-                value = "0" + value;
+    /*
+    * 通过MD5的值判断文件的上传状态
+    * 从未上传
+    * 已经上传完成
+    * 上传一部分，断点续传
+    * */
+    public static CommonResponseDTO checkFileMd5(String md5){
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+        Object processingObj = stringRedisTemplate.opsForHash()
+                .get(Constants.FILE_UPLOAD_STATUS, md5);    //上传文件的状态
+
+        if (processingObj == null) {    //该文件从未上传
+            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.NO_HAVE));
+            commonResponseDTO.setMessage("文件未上传,马上上传");
+
+            return commonResponseDTO;
+        }
+
+        String processingStr = processingObj.toString();
+        boolean processing = Boolean.parseBoolean(processingStr);
+        String value = stringRedisTemplate.opsForValue()
+                .get(Constants.FILE_MD5_KEY + md5); //文件所在路径
+
+        if (processing) {   //上传完成
+            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.IS_HAVE));
+            commonResponseDTO.setMessage("文件已经上传");
+
+            return commonResponseDTO;
+        } else {    //上传未完成
+            File confFile = new File(value);
+            byte[] completeList = new byte[0];
+            try {
+                completeList = FileUtils.readFileToByteArray(confFile);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (null != in) {
-                try {
-                    in.getChannel().close();
-                    in.close();
-                } catch (IOException e) {
-                    logger.error("get file md5 error!!!", e);
+            List<String> missChunkList = new LinkedList<>();    //文件未上传的部分
+
+            for (int i = 0; i < completeList.length; i++) {
+                if (completeList[i] != Byte.MAX_VALUE) {
+                    missChunkList.add(i + "");
                 }
             }
-            if (null != byteBuffer) {
-                freedMappedByteBuffer(byteBuffer);
-            }
-        }
-        return value;
+
+            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.ING_HAVE));
+            commonResponseDTO.setMessage("文件上传一部分，开始断点续传");
+
+            return commonResponseDTO;
+    }
     }
 
     /**
      * 在MappedByteBuffer释放后再对它进行读操作的话就会引发jvm crash，在并发情况下很容易发生
-     * 正在释放时另一个线程正开始读取，于是crash就发生了。所以为了系统稳定性释放前一般需要检 查是否还有线程在读或写
+     * 正在释放时另一个线程正开始读取，于是crash就发生了。所以为了系统稳定性释放前一般需要检查是否还有线程在读或写
      *
      * @param mappedByteBuffer
      */
@@ -86,5 +119,10 @@ public class FileMD5Util {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @PostConstruct
+    public void init(){
+        stringRedisTemplate = this.stringRedisTemplate1;
     }
 }
