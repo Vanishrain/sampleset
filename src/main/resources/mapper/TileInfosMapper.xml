@@ -2,9 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.iecas.datasets.image.dao.TileInfosMapper">
+    <select id="getNameByPath" parameterType="String" resultType="String">
+        select dataPath from tile_infos
+        where visualPath = #{visualPath}
+    </select>
+
     <select id="getTileByName" parameterType="int" resultType="cn.iecas.datasets.image.pojo.domain.TileInfosDO">
         select * from tile_infos
-        where id = #{imageName}
+        where id = #{fileId}
     </select>
 
     <select id="getStoragePath" parameterType="int" resultType="String">

@@ -64,7 +64,10 @@ public class TileInfoController {
     @GetMapping(value = "checkFileMd5")
     @CrossOrigin
     public CommonResponseDTO checkFileMd5(String md5) {
-        return FileMD5Util.checkFileMd5(md5);
+        ResultVo resultVo = FileMD5Util.checkFileMd5(md5);
+
+//        return new CommonResponseDTO().success().data(resultVo.getData()).message(resultVo.getMsg());
+        return new CommonResponseDTO().success().data(resultVo).message(resultVo.getMsg());
     }
 
 

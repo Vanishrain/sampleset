@@ -15,6 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.csource.fastdfs.*;
 import org.slf4j.Logger;
@@ -30,6 +33,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -73,6 +77,8 @@ public class StorageServiceImpl implements StorageService {
     private TileInfosMapper tileInfosMapper;
     @Autowired
     private ImageDatasetMapper imageDatasetMapper;
+    @Autowired
+    SqlSessionFactory sqlSessionFactory;
 
     @Autowired
     public StorageServiceImpl(@Value("${value.dir.monitorDir}") String location) { //获取文件上传路径
@@ -300,6 +306,10 @@ public class StorageServiceImpl implements StorageService {
 
             File[] imgs = new File(imgsDir).listFiles();
             int len = imgs.length;
+//            List<String> storagePath = new ArrayList<>();
+//            List<String> visualPath = new ArrayList<>();
+//            List<String> labelPath = new ArrayList<>();
+            SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH);
             for (int i=0; i<len; i++){
                 File imgFile = imgs[i]; //img
                 String imgName = imgFile.getName();
@@ -314,40 +324,32 @@ public class StorageServiceImpl implements StorageService {
                 imgFis = new FileInputStream(imgFile);
                 visualFis = new FileInputStream(visualFile);
                 xmlFis = new FileInputStream(xmlFile);
-                String storagePath = (String) FastDFSUtil.upload(imgFile, imgFis, baos);
-                String visualPath = (String) FastDFSUtil.upload(visualFile, visualFis, baos);
-                String labelPath = (String) FastDFSUtil.upload(xmlFile, xmlFis, baos);
+//                String storagePath = (String) FastDFSUtil.upload(imgFile, imgFis, baos);
+//                String visualPath = (String) FastDFSUtil.upload(visualFile, visualFis, baos);
+//                String labelPath = (String) FastDFSUtil.upload(xmlFile, xmlFis, baos);
 
                 /*
                 * 信息入库
                 * */
-                tileInfosDO.setStoragePath(storagePath);
-                tileInfosDO.setVisualPath(visualPath);
-                tileInfosDO.setLabelPath(labelPath);
+                tileInfosDO.setStoragePath((String) FastDFSUtil.upload(imgFile, imgFis, baos));
+                tileInfosDO.setVisualPath((String) FastDFSUtil.upload(visualFile, visualFis, baos));
+                tileInfosDO.setLabelPath((String) FastDFSUtil.upload(xmlFile, xmlFis, baos));
                 tileInfosDO.setImagesetid(35);
                 tileInfosDO.setDataPath(imgName);
                 //态势信息入库(新增)
                 tileInfosMapper.insertTilesInfo(tileInfosDO);
-                //图像信息更新(number)
-                imageDataSetInfoDO.setNumber(fileFileCount++);
-                imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+                fileFileCount++;
+                while (len % 1000 == 0){
+                    sqlSession.commit();
+                }
             }
-
-            /*for (String tileFile : decompressedFile){
-                file = new File(tileFilePath + tileFile);
-                fis = new FileInputStream(file);
-                fileId = (String) FastDFSUtil.upload(file, fis, baos); //上传后返回文件所在服务器的路径
-
-                tileInfosDO.setDataPath(StringUtils.substringAfter(tileFile, "\\"));  //文件名
-                tileInfosDO.setImagesetid(35);
-                tileInfosDO.setStoragePath(fileId); //源文件存储路径
-
-                //态势信息入库(新增)
-                tileInfosMapper.insertTilesInfo(tileInfosDO);
-                //图像信息更新(number)
-                imageDataSetInfoDO.setNumber(fileFileCount++);
-                imageDatasetMapper.updateNumber(imageDataSetInfoDO);
-            }*/
+            baos.close();
+            imgFis.close();
+            visualFis.close();
+            xmlFis.close();
+            //图像信息更新(number)
+            imageDataSetInfoDO.setNumber(fileFileCount);
+            imageDatasetMapper.updateNumber(imageDataSetInfoDO);
         }
 
         return new CommonResponseDTO().success().message("文件上传成功");

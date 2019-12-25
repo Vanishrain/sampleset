@@ -1,6 +1,5 @@
 package cn.iecas.datasets.image.utils;
 
-import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
 import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultStatus;
 import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
 import org.apache.commons.io.FileUtils;
@@ -12,15 +11,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.math.BigInteger;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.security.AccessController;
-import java.security.MessageDigest;
 import java.security.PrivilegedAction;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,28 +35,20 @@ public class FileMD5Util {
     * 已经上传完成
     * 上传一部分，断点续传
     * */
-    public static CommonResponseDTO checkFileMd5(String md5){
-        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+    public static ResultVo checkFileMd5(String md5){
         Object processingObj = stringRedisTemplate.opsForHash()
                 .get(Constants.FILE_UPLOAD_STATUS, md5);    //上传文件的状态
 
         if (processingObj == null) {    //该文件从未上传
-            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.NO_HAVE));
-            commonResponseDTO.setMessage("文件未上传,马上上传");
-
-            return commonResponseDTO;
+            return new ResultVo(ResultStatus.NO_HAVE, "文件未上传，马上上传");
         }
 
-        String processingStr = processingObj.toString();
-        boolean processing = Boolean.parseBoolean(processingStr);
+        boolean processing = Boolean.parseBoolean(processingObj.toString());
         String value = stringRedisTemplate.opsForValue()
                 .get(Constants.FILE_MD5_KEY + md5); //文件所在路径
 
         if (processing) {   //上传完成
-            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.IS_HAVE));
-            commonResponseDTO.setMessage("文件已经上传");
-
-            return commonResponseDTO;
+            return new ResultVo(ResultStatus.IS_HAVE, "文件已经上传");
         } else {    //上传未完成
             File confFile = new File(value);
             byte[] completeList = new byte[0];
@@ -79,10 +65,7 @@ public class FileMD5Util {
                 }
             }
 
-            commonResponseDTO.setResultVo(new ResultVo(ResultStatus.ING_HAVE));
-            commonResponseDTO.setMessage("文件上传一部分，开始断点续传");
-
-            return commonResponseDTO;
+            return new ResultVo(ResultStatus.ING_HAVE, "文件上传一部分，开始从断点续传");
     }
     }
 
