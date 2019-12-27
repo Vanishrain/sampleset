@@ -29,6 +29,11 @@ public class ResultVo<T> {
         this.data = data;
     }
 
+    public ResultVo(ResultStatus status, String msg){
+        this.status = status;
+        this.msg = msg;
+    }
+
     @Override
     public String toString() {
         return "ResultVo{" +

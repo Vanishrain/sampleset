@@ -13,11 +13,13 @@ import java.util.List;
 
 @Repository
 public interface TileInfosMapper extends BaseMapper<TileInfosDO> {
+    String getNameByPath(@Param("visualPath") String imagePath);
     void deleteByImagesetid(Integer imagesetid);
     void insertTilesInfo(TileInfosDO tileInfoDO);
     String getVisualPath(int tileId);
     String getStoragePath(String visualPath);
-    TileInfosDO getTileByName(String imageName);
+//    TileInfosDO getTileByName(String imageName);
+    TileInfosDO getTileByName(int tileId);
     IPage<String> getAll(Page page, int imageDatasetId);
     List<TileInfoStatistic> getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO);
     List<TileInfoStatistic> getStatisticByDataSets(TileInfoStatParamsDTO tileInfoStatParamsDTO);

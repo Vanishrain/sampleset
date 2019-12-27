@@ -18,6 +18,7 @@ public class MultipartFileParam {
     private MultipartFile file;
     // MD5
     private String md5;
+    private int imagesetid; //数据集id
 
     @Override
     public String toString() {
@@ -28,6 +29,7 @@ public class MultipartFileParam {
                 ", name='" + name + '\'' +
                 ", file=" + file +
                 ", md5='" + md5 + '\'' +
+                ", imagesetid=" + imagesetid +
                 '}';
     }
 }

@@ -3,12 +3,14 @@ package cn.iecas.datasets.image.service.impl;
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
+import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.DatasetTileInfoStatistic;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.TileInfoStatistic;
 import cn.iecas.datasets.image.service.TileInfosService;
+import cn.iecas.datasets.image.utils.FastDFSUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -35,15 +37,46 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
     BaseDataSource baseDataSource;
 
     @Override
+    public void deleteByImageDatasetId(int imagesetid) {
+        List<TileInfosDO> tileInfosDOS = tileInfosMapper.getAllTileById(imagesetid);
+        List<Integer> tileIds = new ArrayList<>();
+        for (TileInfosDO tileInfosDO : tileInfosDOS){//得到所有切片id
+            tileIds.add(tileInfosDO.getId());
+        }
+
+        for (int tileId : tileIds){
+            baseDataSource.deletes(tileId);//删除切片数据
+            //tileInfosMapper.deleteById(tileId);//删除切片库中信息
+        }
+    }
+
+    /*
+    * 根据切片id批量删除
+    * */
+    @Override
+    public void deleteImages(Integer[] tileIds) {
+        ImageDataSetInfoDO imageDataSetInfoDO;
+        for (int tileId : tileIds){
+            baseDataSource.deletes(tileId);//删除切片数据
+            int imageDataSetId = tileInfosMapper.getImageDataSetId(tileId); //根据切片id得到数据集id
+            tileInfosMapper.deleteById(tileId);//删除切片库中信息
+
+            imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(imageDataSetId);
+            imageDataSetInfoDO.setNumber(imageDataSetInfoDO.getNumber()-1);
+            imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+        }
+    }
+
+    @Override
     public void insertTileInfo(TileInfosDO tileInfoDO) {
         this.baseMapper.insertTilesInfo(tileInfoDO);
-        if(tileInfoDO.getImagesetid()!=null) {
-            imageDatasetMapper.updateImageDataset(1,tileInfoDO.getImagesetid(),"number");
-            if (tileInfoDO.getTargetNum() != null ) {
-                imageDatasetMapper.updateImageDataset(tileInfoDO.getTargetNum(),tileInfoDO.getImagesetid(),"targetnum");
+        if (tileInfoDO.getImagesetid() != null) {
+            imageDatasetMapper.updateImageDataset(1, tileInfoDO.getImagesetid(), "number");
+            if (tileInfoDO.getTargetNum() != null) {
+                imageDatasetMapper.updateImageDataset(tileInfoDO.getTargetNum(), tileInfoDO.getImagesetid(), "targetnum");
             }
         }
-        log.info("成功插入切片数据imagesetid:{}",tileInfoDO.getImagesetid());
+        log.info("成功插入切片数据imagesetid:{}", tileInfoDO.getImagesetid());
     }
 
     @Override
@@ -51,7 +84,7 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
         Page<String> page = new Page<>();
         page.setCurrent(tileRequestDTO.getPageNo());
         page.setSize(tileRequestDTO.getPageSize());
-        List<String> imagePathList = tileInfosMapper.getAll(page,tileRequestDTO.getImageDatasetId()).getRecords();
+        List<String> imagePathList = tileInfosMapper.getAll(page, tileRequestDTO.getImageDatasetId()).getRecords();
         TileSetDTO tileSetDTO = null;
         try {
             tileSetDTO = baseDataSource.getImages(imagePathList);
@@ -59,23 +92,32 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
             e.printStackTrace();
         }
 
-        /*
-        * TODO
-        *  补充其他参数（pageNo、totalCount）
-        * */
+        tileSetDTO.setPageNo(1);
+        tileSetDTO.setTotalCount(imagePathList.size());
         return tileSetDTO;
     }
 
+    /**
+     *
+     * @param tileId
+     * @param type
+     * @return
+     */
     @Override
-    public Tile getTileByName(String tileId, String type){
-        /*
-        * TODO
-        *  String type(imgs、visual、xmls)
-        *  根据文件类型查询对应的信息返回
-        * */
-        String visualPath = tileInfosMapper.getVisualPath(Integer.valueOf(tileId));
-        return baseDataSource.getImageByName(visualPath);
-    }
+    public Tile getTileByName(String tileId, String type) {
+        Tile tile = new Tile();
+        TileInfosDO tileInfosDO = tileInfosMapper.getTileByName(Integer.valueOf(tileId));
+        tile.setName(tileInfosDO.getDataPath());
+        if ("imgs".equals(type)) {
+            tile.setBase64Tile(baseDataSource.getImageByPath(tileInfosDO.getStoragePath()));
+        } else if ("visuals".equals(type)) {
+            tile.setBase64Tile(baseDataSource.getImageByPath(tileInfosDO.getVisualPath()));
+        } else if ("xmls".equals(type)) {
+            tile.setBase64Tile(baseDataSource.getImageByPath(tileInfosDO.getLabelPath()));
+        }
+
+        return tile;
+}
 
 
     /**

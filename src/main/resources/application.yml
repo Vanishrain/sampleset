@@ -53,11 +53,12 @@ datasource:
 
 value:
   dir:
-    monitorDir: D:\\JCP\\YXCP_YGYX\\IMG\\  #上传路径
+    monitorDir: D:\\JCP\\YXCP_YGYX\\IMG\\  #本地上传路径
     decompressRootDir: data\\fastdfs\\data\\ #/data/fastdfs/data/
     decompressImgDir: D:\\YXCP_YGYX\\IMG\\  #解压路径
     decompressThumbnailL: YXCP_YGYX\SLT\\
     decompressThumbnailS: YXCP_YGYX\MZT\\
+    #downloadDir: D:\\imagedataset\\tile\\
   decompressCmd:
     rar:
       list: unrar lb
@@ -73,7 +74,7 @@ value:
     attach: ovr
     compressedFile: rar,zip,tar
   fastdfsServer: 192.168.50.170:8888
-  downloadPath: D:\\zhaoyang\\files\\FastDFSFileDownload\\
+  downloadPath: D:\\imagedataset\\tile\\
 
 breakpoint:
   upload:

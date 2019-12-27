@@ -3,7 +3,6 @@ package cn.iecas.datasets.image.datasource;
 import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -32,6 +31,11 @@ public interface BaseDataSource {
      * @return
      */
     Tile getImageByName( String imageName);
+
+    String getImageByPath( String path);
+
+    void deletes(int tileId);
+    byte[] download(String fileId);
 
     /**
      * 根据切片名称删除数据集中的切片

@@ -1,6 +1,5 @@
 package cn.iecas.datasets.image.utils;
 
-import jdk.internal.util.xml.impl.Input;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
