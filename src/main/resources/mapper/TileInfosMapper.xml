@@ -30,15 +30,25 @@
         values
         (#{taskid},#{dataPath},#{labelPath},#{visualPath},#{resolution},#{sensor},#{band},#{imagesetid},#{targetNum},#{createTime},#{storagePath})
     </insert>
-    <select id="getStatistic" parameterType="cn.iecas.datasets.image.pojo.dto.TileInfoStatParamsDTO" resultType="cn.iecas.datasets.image.pojo.entity.TileInfoStatistic">
-        SELECT DATE_FORMAT(createTime,#{timeStep}) as step,  COUNT(*) as count FROM tile_infos
+
+    <select id="getStatistic" resultType="cn.iecas.datasets.image.pojo.entity.TileInfoStatistic" >
+       SELECT DATE_FORMAT(createTime,#{timeStep}) as step,  COUNT(*) as count FROM tile_infos where createTime BETWEEN #{beginTime} AND #{endTime} GROUP BY step order by step
+   </select>
+
+
+
+    <select id="getStatisticByDataSets" resultType="cn.iecas.datasets.image.pojo.entity.TileInfoStatistic">
+        SELECT DATE_FORMAT(createTime,#{timeStep}) as step, count(*) as count , imagesetid as imageSetId FROM tile_infos
         <where>
-            <if test="imagesetidPre!=null">
-                imagesetid=#{imagesetidPre}
+            <if test="imageSetIdList!=null">
+                imagesetid in
+                <foreach collection="imageSetIdList" item="imageSetId" separator="," open="(" close=")">
+                    #{imageSetId}
+                </foreach>
             </if>
-            and  createTime BETWEEN #{beginTime} AND #{endTime}
+            and createTime BETWEEN #{beginTime} AND #{endTime}
         </where>
-        GROUP BY step order by step
+        group by imageSetId,step order by imageSetId ,step
     </select>
 
 </mapper>

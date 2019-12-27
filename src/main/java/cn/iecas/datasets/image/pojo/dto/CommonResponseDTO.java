@@ -21,9 +21,6 @@ public class CommonResponseDTO<T> {
         this.code = httpStatus;
     }
 
-    private void resultVo(ResultVo resultVo){
-        this.resultVo = resultVo;
-    }
 
     public CommonResponseDTO message(String message){
         this.message = message;

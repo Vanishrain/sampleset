@@ -339,7 +339,7 @@ public class StorageServiceImpl implements StorageService {
                 fileId = (String) FastDFSUtil.upload(file, fis, baos); //上传后返回文件所在服务器的路径
 
                 tileInfosDO.setDataPath(StringUtils.substringAfter(tileFile, "\\"));  //文件名
-                tileInfosDO.setImagesetid(35);
+                tileInfosDO.setImageSetIdList(35);
                 tileInfosDO.setStoragePath(fileId); //源文件存储路径
 
                 //态势信息入库(新增)

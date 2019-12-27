@@ -18,8 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -87,16 +86,19 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
      */
     @Override
     public  TileInfoAllStatisticResponseDTO getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO) {
-       List<TileInfoStatistic>  tileInfoStatisticList=this.baseMapper.getStatistic(tileInfoStatParamsDTO);
-       int count=0;
-       for(TileInfoStatistic tileInfoStatistic:tileInfoStatisticList){
-           count=count+tileInfoStatistic.getCount();
-           tileInfoStatistic.setCount(count);
-       }
-       TileInfoAllStatisticResponseDTO tileInfoAllStatisticResponseDTO=new TileInfoAllStatisticResponseDTO();
-       tileInfoAllStatisticResponseDTO.setContent(tileInfoStatisticList);
-       tileInfoAllStatisticResponseDTO.setCount(tileInfoStatisticList.size());
-       return tileInfoAllStatisticResponseDTO;
+        int count=0;
+        List<Map<String,Integer>> contentList = new ArrayList<>();
+        List<TileInfoStatistic>  tileInfoStatisticList=this.baseMapper.getStatistic(tileInfoStatParamsDTO);
+        for(TileInfoStatistic tileInfoStatistic:tileInfoStatisticList){
+            Map<String,Integer> content = new HashMap<>();
+            count=count+tileInfoStatistic.getCount();
+            content.put(tileInfoStatistic.getStep(),count);
+            contentList.add(content);
+        }
+        TileInfoAllStatisticResponseDTO tileInfoAllStatisticResponseDTO=new TileInfoAllStatisticResponseDTO();
+        tileInfoAllStatisticResponseDTO.setContent(contentList);
+        tileInfoAllStatisticResponseDTO.setCount(contentList.size());
+        return tileInfoAllStatisticResponseDTO;
     }
 
     /**
@@ -106,28 +108,43 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
      */
     @Override
     public TileInfoStatisticResponseDTO getStatisticByIds(TileInfoStatParamsDTO tileInfoStatParamsDTO) {
-        TileInfoStatParamsDTO tileInfoStatParamsDTOPre=new TileInfoStatParamsDTO();
-        tileInfoStatParamsDTOPre.setBeginTime(tileInfoStatParamsDTO.getBeginTime().getTime());
-        tileInfoStatParamsDTOPre.setEndTime(tileInfoStatParamsDTO.getEndTime().getTime());
-        tileInfoStatParamsDTOPre.setTimeStep(tileInfoStatParamsDTO.getTimeStep());
-        Integer count;
+        int accumulation = 0;
+        int oldImageSetId = -1;
         TileInfoStatisticResponseDTO tileInfoStatisticResponseDTO=new TileInfoStatisticResponseDTO();
-        List<DatasetTileInfoStatistic> datasetTileInfoStatistics = new ArrayList<>();
-        for(String tempDatasetid:tileInfoStatParamsDTO.getImagesetid()) {
-            DatasetTileInfoStatistic datasetTileInfoStatistic=new DatasetTileInfoStatistic();
-            datasetTileInfoStatistic.setImagesetid(Integer.valueOf(tempDatasetid));
-            count=0;
-            tileInfoStatParamsDTOPre.setImagesetidPre(Integer.valueOf(tempDatasetid));
-            List<TileInfoStatistic> tileInfoStatisticList = this.baseMapper.getStatistic(tileInfoStatParamsDTOPre);
-            for (TileInfoStatistic tileInfoStatistic : tileInfoStatisticList) {
-                count = count + tileInfoStatistic.getCount();
-                tileInfoStatistic.setCount(count);
+        List<TileInfoStatistic> tileInfoStatisticList = this.baseMapper.getStatisticByDataSets(tileInfoStatParamsDTO);
+        Map<Integer,DatasetTileInfoStatistic> datasetTileInfoStatisticMap = new HashMap<>();
+
+        for (TileInfoStatistic tileInfoStatistic : tileInfoStatisticList) {
+            String step = tileInfoStatistic.getStep();
+            DatasetTileInfoStatistic datasetTileInfoStatistic;
+            int imageSetId = tileInfoStatistic.getImageSetId();
+
+            if (datasetTileInfoStatisticMap.containsKey(imageSetId))
+                datasetTileInfoStatistic = datasetTileInfoStatisticMap.get(imageSetId);
+            else{
+
+                datasetTileInfoStatistic = new DatasetTileInfoStatistic(imageSetId, new ArrayList<>());
+                datasetTileInfoStatisticMap.put(imageSetId,datasetTileInfoStatistic);
             }
-            datasetTileInfoStatistic.setContent(tileInfoStatisticList);
-            datasetTileInfoStatistics.add(datasetTileInfoStatistic);
+
+
+            List<Map<String,Integer>> contentList = datasetTileInfoStatistic.getContent() ;
+
+            if (oldImageSetId != imageSetId){
+                accumulation=0;
+                oldImageSetId = imageSetId;
+            }
+
+
+            accumulation += tileInfoStatistic.getCount();
+
+            Map<String,Integer> content = new HashMap<>();
+            content.put(step,accumulation);
+            contentList.add(content);
         }
-        tileInfoStatisticResponseDTO.setContent(datasetTileInfoStatistics);
-        tileInfoStatisticResponseDTO.setCount(datasetTileInfoStatistics.size());
+        List<DatasetTileInfoStatistic> contentList = new ArrayList<>(datasetTileInfoStatisticMap.values());
+        tileInfoStatisticResponseDTO.setContent(contentList);
+        tileInfoStatisticResponseDTO.setCount(datasetTileInfoStatisticMap.size());
         return tileInfoStatisticResponseDTO;
     }
 }
