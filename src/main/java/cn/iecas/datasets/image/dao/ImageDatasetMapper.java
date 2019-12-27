@@ -18,5 +18,4 @@ public interface ImageDatasetMapper  extends BaseMapper<ImageDataSetInfoDO> {
     void insertDataset(ImageDataSetInfoDO imageDataSetInfoDO);
     void updateImageDataset(int value,int imagesetid,String field);
     List<ImageDataSetInfoDO> listImageDataSetInfos(Page page, @Param("imageDatasetInfoRequestDTO") ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO);
-
 }

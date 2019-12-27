@@ -14,5 +14,6 @@ public interface TileInfosService {
     Tile getTileByName(String tileId, String type);
     TileInfoAllStatisticResponseDTO getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO);
     TileInfoStatisticResponseDTO getStatisticByIds(TileInfoStatParamsDTO tileInfoStatParamsDTO);
-
+    void deleteImages(Integer[] tileIds);
+    void deleteByImageDatasetId(int imgdatasetid);
 }

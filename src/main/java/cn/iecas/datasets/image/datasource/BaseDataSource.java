@@ -34,6 +34,9 @@ public interface BaseDataSource {
 
     String getImageByPath( String path);
 
+    void deletes(int tileId);
+    byte[] download(String fileId);
+
     /**
      * 根据切片名称删除数据集中的切片
      * @param imageSetId

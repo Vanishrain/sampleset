@@ -3,12 +3,14 @@ package cn.iecas.datasets.image.service.impl;
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
+import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.DatasetTileInfoStatistic;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.TileInfoStatistic;
 import cn.iecas.datasets.image.service.TileInfosService;
+import cn.iecas.datasets.image.utils.FastDFSUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,37 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
     TileInfosMapper tileInfosMapper;
     @Autowired
     BaseDataSource baseDataSource;
+
+    @Override
+    public void deleteByImageDatasetId(int imagesetid) {
+        List<TileInfosDO> tileInfosDOS = tileInfosMapper.getAllTileById(imagesetid);
+        List<Integer> tileIds = new ArrayList<>();
+        for (TileInfosDO tileInfosDO : tileInfosDOS){//得到所有切片id
+            tileIds.add(tileInfosDO.getId());
+        }
+
+        for (int tileId : tileIds){
+            baseDataSource.deletes(tileId);//删除切片数据
+            //tileInfosMapper.deleteById(tileId);//删除切片库中信息
+        }
+    }
+
+    /*
+    * 根据切片id批量删除
+    * */
+    @Override
+    public void deleteImages(Integer[] tileIds) {
+        ImageDataSetInfoDO imageDataSetInfoDO;
+        for (int tileId : tileIds){
+            baseDataSource.deletes(tileId);//删除切片数据
+            int imageDataSetId = tileInfosMapper.getImageDataSetId(tileId); //根据切片id得到数据集id
+            tileInfosMapper.deleteById(tileId);//删除切片库中信息
+
+            imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(imageDataSetId);
+            imageDataSetInfoDO.setNumber(imageDataSetInfoDO.getNumber()-1);
+            imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+        }
+    }
 
     @Override
     public void insertTileInfo(TileInfosDO tileInfoDO) {

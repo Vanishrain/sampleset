@@ -19,6 +19,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotEmpty;
 import javax.websocket.server.PathParam;
 import java.io.File;
 import java.io.IOException;
@@ -32,11 +33,21 @@ import java.util.List;
 public class TileInfoController {
 
     @Autowired
+    private  HttpServletRequest request;
+
+    @Autowired
     TileInfosService tileInfosService;
     @Autowired
     StorageService storageService;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
+
+    @Log("根据切片主键批量删除")
+    @DeleteMapping("/{tileIds}")
+    public CommonResponseDTO deleteImages(@NotEmpty @PathVariable Integer[] tileIds){
+        tileInfosService.deleteImages(tileIds);
+        return new CommonResponseDTO().success().message("删除成功!");
+    }
 
     @Log("分页查询切片数据")
     @GetMapping
@@ -45,7 +56,7 @@ public class TileInfoController {
         return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
     }
 
-    @Log("查询指定数据集指定名称的影像")
+    @Log("查询指定名称的影像")
     @GetMapping(value = "/{tileId}/{type}")
     public CommonResponseDTO<Tile> getImageByName(@PathVariable String tileId, @PathVariable String type ){
         Tile tile = tileInfosService.getTileByName(tileId, type);
@@ -55,18 +66,23 @@ public class TileInfoController {
     @Log("批量增加切片数据，并且更新对应数据集")
     @PostMapping(value = "/upload")
     @CrossOrigin
-    public CommonResponseDTO uploadTiles(MultipartFileParam param, HttpServletRequest request){
-        return (CommonResponseDTO) storageService.uploadTiles(param, request);
+    public CommonResponseDTO uploadTiles(MultipartFileParam param) throws Exception {
+        storageService.uploadTiles(param, request);
+        return new CommonResponseDTO().success().message("成功上传");
     }
 
+    @Log("下载切片压缩包")
+    @GetMapping("/downloadTile/{imagesetid}")
+    public CommonResponseDTO downloadTile(@NotEmpty @PathVariable int imagesetid) throws IOException {
+        storageService.download(imagesetid);
+        return new CommonResponseDTO().success().message("下载完成！");
+    }
 
     @Log("秒传判断，断点判断")
     @GetMapping(value = "checkFileMd5")
     @CrossOrigin
     public CommonResponseDTO checkFileMd5(String md5) {
         ResultVo resultVo = FileMD5Util.checkFileMd5(md5);
-
-//        return new CommonResponseDTO().success().data(resultVo.getData()).message(resultVo.getMsg());
         return new CommonResponseDTO().success().data(resultVo).message(resultVo.getMsg());
     }
 

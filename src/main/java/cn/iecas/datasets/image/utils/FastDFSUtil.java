@@ -1,10 +1,7 @@
 package cn.iecas.datasets.image.utils;
 
-import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
 import org.csource.common.MyException;
-import org.csource.common.NameValuePair;
 import org.csource.fastdfs.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 
@@ -23,19 +20,59 @@ public class FastDFSUtil {
         }
     }
 
+    public static byte[] download(String fileId){
+        StorageClient1 storageClient1 = getSrorageClient();
+        try {
+            return storageClient1.download_file1(fileId);
+        } catch (IOException | MyException e) {
+            e.printStackTrace();
+        }finally {
+            FastDFSUtil.closeConnection();
+        }
+        return null;
+    }
+
+    /*
+    * 删除
+    * 成功返回0
+    * 非0则操作失败
+    * */
+    public static int delete(String fileId){
+        int result = 1;
+        StorageClient1 storageClient1 = getSrorageClient();
+        try {
+            result = storageClient1.delete_file1(fileId);
+            return result;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return result;
+        } catch (MyException e) {
+            e.printStackTrace();
+            return result;
+        }
+    }
+
+    /*
+    * 获得StorageClient连接
+    * */
     public static StorageClient1 getSrorageClient(){
         TrackerClient trackerClient = new TrackerClient();
         StorageClient1 storageClient = null;
         try {
             trackerServer = trackerClient.getConnection();    //跟踪服务器
             storageServer = trackerClient.getStoreStorage(trackerServer); //存储服务器
+            if (storageServer == null){
+                throw new Exception("获取FastDFS连接失败");
+            }
 
             String storageIP = storageServer.getSocket().getInetAddress().getHostAddress(); //IP
             int port = storageServer.getSocket().getPort(); //端口
             storageClient = new StorageClient1(trackerServer, new StorageServer(storageIP, port, 0));
         } catch (IOException e) {
             e.printStackTrace();
-    }
+    } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return storageClient;
     }
@@ -59,10 +96,12 @@ public class FastDFSUtil {
     /*
     * 上传
     * */
-    public static Object upload(File file, InputStream fis, ByteArrayOutputStream baos) {
+    public static String upload(File file, InputStream fis) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
         try {
             if (file == null){
-                return new CommonResponseDTO().fail().message("上传文件为空");
+                throw  new Exception("上传文件为空");
             }else {
                 String tempFileName = file.getName();
 
@@ -73,7 +112,6 @@ public class FastDFSUtil {
                 }
                 byte[] fileBuff = baos.toByteArray();
 
-                //FastDFS方式
                 String fileExtName = tempFileName.substring(tempFileName.lastIndexOf(".")); //后缀
 
                 String fileId = getSrorageClient().upload_file1(fileBuff, fileExtName, null);

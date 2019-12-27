@@ -1,6 +1,7 @@
 package cn.iecas.datasets.image.datasource;
 
 import cn.iecas.datasets.image.dao.TileInfosMapper;
+import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.utils.FastDFSUtil;
@@ -109,12 +110,10 @@ public class FDFSSourceImpl implements BaseDataSource {
      */
     @Override
     public String getImageByPath(String path) {
-//        Tile tile = new Tile();
         StorageClient1 storageClient = FastDFSUtil.getSrorageClient();
         byte[] result = null;
         try {
             result = storageClient.download_file1(path);
-//            printTile(result,"d:\\test.jpg",500);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (MyException e) {
@@ -125,8 +124,28 @@ public class FDFSSourceImpl implements BaseDataSource {
         String imageDataString = encoder.encode(result).replaceAll("\r|\n", "");
         String base64Tile = "data:image/jpeg;base64," + imageDataString;
 
-//        tile.setBase64Tile(base64Tile);
         return base64Tile;
+    }
+
+    @Override
+    public void deletes(int tileId){
+        String storagePath;
+        String visualPath;
+        String labelPath;
+
+        TileInfosDO tileInfosDO = tileInfosMapper.getTileByName(tileId);
+        storagePath = tileInfosDO.getStoragePath();
+        visualPath = tileInfosDO.getVisualPath();
+        labelPath = tileInfosDO.getLabelPath();
+
+        FastDFSUtil.delete(storagePath);
+        FastDFSUtil.delete(visualPath);
+        FastDFSUtil.delete(labelPath);
+    }
+
+    @Override
+    public byte[] download(String fileId) {
+        return FastDFSUtil.download(fileId);
     }
 
     /**

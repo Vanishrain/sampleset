@@ -11,6 +11,8 @@ import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.Statistic;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
+import cn.iecas.datasets.image.service.TileInfosService;
+import cn.iecas.datasets.image.utils.FastDFSUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,9 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
 
     @Autowired
     BaseDataSource baseDataSource;
+
+    @Autowired
+    TileInfosService tileInfosService;
 
     @Override
     public ImageDataSetStatisticDTO getStatistic() {
@@ -128,6 +133,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
         ImageDataSetInfoDO imageDataSetInfoDO = this.baseMapper.selectById(imageDataSetId);
         int flag = this.baseMapper.deleteById(imageDataSetId);
         if(flag!=0){
+            tileInfosService.deleteByImageDatasetId(imageDataSetId);
             tileInfosMapper.deleteByImagesetid(imageDataSetId);
             log.info("成功删除数据集:{}和数据集下的切片信息",imageDataSetId);
         }else{

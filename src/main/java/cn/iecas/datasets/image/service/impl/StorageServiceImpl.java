@@ -2,9 +2,9 @@ package cn.iecas.datasets.image.service.impl;
 
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
+import cn.iecas.datasets.image.datasource.BaseDataSource;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
-import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
 import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
 import cn.iecas.datasets.image.service.StorageService;
 import cn.iecas.datasets.image.utils.CompressUtil;
@@ -14,12 +14,10 @@ import cn.iecas.datasets.image.utils.FileMD5Util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
-import org.csource.fastdfs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +31,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -43,7 +40,10 @@ public class StorageServiceImpl implements StorageService {
     private final Logger logger = LoggerFactory.getLogger(StorageServiceImpl.class);
 
     @Value("${value.dir.monitorDir}")
-    private Path rootPath;  // 本地保存文件的目录
+    private Path rootPath;  // 本地暂时保存文件的目录
+
+    @Value("${value.downloadPath}")
+    private String downloadDir;
 
     @Value("${breakpoint.upload.chunkSize}")
     private long CHUNK_SIZE;    //文件分块大小(必须与前端设定的值一致)
@@ -79,6 +79,8 @@ public class StorageServiceImpl implements StorageService {
     private ImageDatasetMapper imageDatasetMapper;
     @Autowired
     SqlSessionFactory sqlSessionFactory;
+    @Autowired
+    BaseDataSource baseDataSource;
 
     @Autowired
     public StorageServiceImpl(@Value("${value.dir.monitorDir}") String location) { //获取文件上传路径
@@ -89,22 +91,18 @@ public class StorageServiceImpl implements StorageService {
     * 上传文件
     * */
     @Override
-    public Object uploadTiles(MultipartFileParam param, HttpServletRequest request) {
+    public void uploadTiles(MultipartFileParam param, HttpServletRequest request) throws Exception {
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
-        CommonResponseDTO commonResponseDTO = null;
 
         if (isMultipart) {
             try {
                 uploadFileByMappedByteBuffer(param); //上传过程
-                return new CommonResponseDTO().success().message("批量增加切片数据成功");
             } catch (IOException e) {
                 e.printStackTrace();
                 log.error("文件上传失败! {}", param.toString());
-
-                return new CommonResponseDTO().fail().message("上传失败");
             }
         } else {
-            return commonResponseDTO.fail().message("请选择文件上传");
+            throw new Exception("请选择文件上传");
         }
     }
 
@@ -112,29 +110,80 @@ public class StorageServiceImpl implements StorageService {
     * 下载
     * */
     @Override
-    public void download(TileInfosDO tileInfosDO) {
-        String targetFilePath = tileInfosMapper.getStoragePath(tileInfosDO.getVisualPath());
-
-        try {
-            String fdfsConf = "src/main/resources/fdfs_client.conf";
-            ClientGlobal.init(fdfsConf);
-            TrackerClient trackerClient = new TrackerClient();
-            TrackerServer trackerServer = trackerClient.getConnection();    //跟踪服务器
-            StorageServer storageServer = trackerClient.getStoreStorage(trackerServer); //存储服务器
-            StorageClient1 storageClient1 = new StorageClient1(trackerServer, storageServer);
-
-//            String groupName = targetFilePath.substring(0, targetFilePath.indexOf("/"));
-//            String fileName = targetFilePath.substring(targetFilePath.indexOf("/")+1);
-//            byte[] bs = storageClient1.download_file(groupName, fileName);
-            byte[] bs = storageClient1.download_file1(targetFilePath);  //根据文件id下载
-            OutputStream out = new FileOutputStream(downloadPath + "\\" + tileInfosDO.getDataPath());
-            out.write(bs);
-            out.close();
-        } catch (Exception e){
-            e.printStackTrace();
-        } finally {
-            FastDFSUtil.closeConnection();
+    public void download(int imagesetid) throws IOException {
+        File downloadDir = new File(downloadPath);  //下载根目录
+        if (!downloadDir.exists()){
+            downloadDir.mkdirs();
         }
+        File imgDir =  new File(downloadPath + File.separator  + "imgs");
+        File visualDir =  new File(downloadPath + File.separator + "visual");
+        File xmlsDir =  new File(downloadPath + File.separator + "xmls");
+        if (!imgDir.exists() || !visualDir.exists() || !xmlsDir.exists()){
+            imgDir.mkdirs();
+            visualDir.mkdirs();
+            xmlsDir.mkdirs();
+        }
+
+        /*
+        * 查询所有分片
+        * 遍历获取分片的存储路径
+        * */
+        List<TileInfosDO> tileInfosDOs = tileInfosMapper.getAllTileById(imagesetid);
+        String imgStoragePath;
+        String visualStoragePath;
+        String xmlStoragePath;
+        OutputStream imgOS;
+        OutputStream visualOS;
+        OutputStream xmlOS;
+
+        for (TileInfosDO tileInfosDO : tileInfosDOs){
+            String commonFileName = tileInfosDO.getDataPath();
+            String suffix = commonFileName.substring(commonFileName.indexOf("."));//后缀
+            String fileName = commonFileName.substring(0, commonFileName.lastIndexOf("."));
+            imgOS = new FileOutputStream(imgDir + File.separator + fileName + suffix);
+            visualOS = new FileOutputStream(visualDir + File.separator + fileName + suffix);
+            xmlOS = new FileOutputStream(xmlsDir + File.separator + fileName + ".xml");
+
+            imgStoragePath = tileInfosDO.getStoragePath();
+            visualStoragePath = tileInfosDO.getVisualPath();
+            xmlStoragePath = tileInfosDO.getLabelPath();
+
+            byte[] imgByteArray = baseDataSource.download(imgStoragePath);
+            byte[] visualByteArray = baseDataSource.download(visualStoragePath);
+            byte[] xmlStorageByteArray = baseDataSource.download(xmlStoragePath);
+
+            System.out.println("正在下载" + commonFileName + "相关文件");
+            imgOS.write(imgByteArray);
+            imgOS.close();
+            visualOS.write(visualByteArray);
+            visualOS.close();
+            xmlOS.write(xmlStorageByteArray);
+            xmlOS.close();
+            System.out.println(commonFileName + "下载完成");
+        }
+
+        /*
+        * 删除空文件夹
+        * */
+        if (imgDir.listFiles() == null){
+            imgDir.delete();
+        }
+        if (visualDir.listFiles() == null){
+            visualDir.delete();
+        }
+        if (xmlsDir.listFiles() == null){
+            xmlsDir.delete();
+        }
+
+        /*
+        * 压缩
+        * */
+        String compressCommand = "rar a " + downloadDir + File.separator + "tile.rar " + downloadDir;
+        Runtime.getRuntime().exec(compressCommand);
+        System.out.println("文件压缩完成");
+
+        //TODO 删除三个文件夹
+        //TODO 返回给前端下载流
     }
 
     /**
@@ -242,7 +291,7 @@ public class StorageServiceImpl implements StorageService {
     /*
      * 上传文件过程
      * */
-    private Object uploadFileByMappedByteBuffer(MultipartFileParam param) throws IOException {
+    private void uploadFileByMappedByteBuffer(MultipartFileParam param) throws IOException {
         String fileName = param.getName();
         String uploadDirPath = rootPath + "\\" + param.getMd5();   //上传文件所在目录
         String decompressDirPath = uploadDirPath;  //解压文件所在路径
@@ -290,60 +339,53 @@ public class StorageServiceImpl implements StorageService {
             /*
              * 上传至服务器
              * */
-            File file = null;
             TileInfosDO tileInfosDO = new TileInfosDO();
-            ImageDataSetInfoDO imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(35);
+            ImageDataSetInfoDO imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(param.getImagesetid());
             int fileFileCount = imageDataSetInfoDO.getNumber(); //上传文件数量
             FileInputStream imgFis = null;
             FileInputStream visualFis = null;
             FileInputStream xmlFis = null;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
             String tileFileRootDirPath = decompressDirPath + "\\car";   //"D:\\JCP\\YXCP_YGYX\\IMG\\d2d540edd0a8cd41071aad778b98a6e3\\car";
-            String imgsDir = tileFileRootDirPath + "\\imgs";
-            String visualDir = tileFileRootDirPath + "\\visual";
-            String xmlsDir = tileFileRootDirPath + "\\xmls";
+            String imgsDir = tileFileRootDirPath + File.separator + "imgs";
+            String visualDir = tileFileRootDirPath + File.separator + "visual";
+            String xmlsDir = tileFileRootDirPath + File.separator + "xmls";
 
             File[] imgs = new File(imgsDir).listFiles();
             int len = imgs.length;
-//            List<String> storagePath = new ArrayList<>();
-//            List<String> visualPath = new ArrayList<>();
-//            List<String> labelPath = new ArrayList<>();
             SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH);
             for (int i=0; i<len; i++){
                 File imgFile = imgs[i]; //img
                 String imgName = imgFile.getName();
                 String commonName = imgName.substring(0, imgName.lastIndexOf("."));
+                String suffix = imgName.substring(imgName.indexOf("."));
 
-                File visualFile = new File(visualDir + "\\" + commonName + ".jpg");
-                File xmlFile = new File(xmlsDir + "\\" + commonName + ".xml");
+                File visualFile = new File(visualDir + File.separator + commonName + suffix);
+                File xmlFile = new File(xmlsDir + File.separator + commonName + ".xml");
 
                 /*
                 * 上传文件
-                * */
-                imgFis = new FileInputStream(imgFile);
-                visualFis = new FileInputStream(visualFile);
-                xmlFis = new FileInputStream(xmlFile);
-//                String storagePath = (String) FastDFSUtil.upload(imgFile, imgFis, baos);
-//                String visualPath = (String) FastDFSUtil.upload(visualFile, visualFis, baos);
-//                String labelPath = (String) FastDFSUtil.upload(xmlFile, xmlFis, baos);
-
-                /*
                 * 信息入库
                 * */
-                tileInfosDO.setStoragePath((String) FastDFSUtil.upload(imgFile, imgFis, baos));
-                tileInfosDO.setVisualPath((String) FastDFSUtil.upload(visualFile, visualFis, baos));
-                tileInfosDO.setLabelPath((String) FastDFSUtil.upload(xmlFile, xmlFis, baos));
-                tileInfosDO.setImagesetid(35);
+                imgFis = new FileInputStream(imgFile);
+                tileInfosDO.setStoragePath(FastDFSUtil.upload(imgFile, imgFis));
+                if (visualFile.exists()){
+                    visualFis = new FileInputStream(visualFile);
+                    tileInfosDO.setVisualPath(FastDFSUtil.upload(visualFile, visualFis));
+                }
+                if (xmlFile.exists()){
+                    xmlFis = new FileInputStream(xmlFile);
+                    tileInfosDO.setLabelPath(FastDFSUtil.upload(xmlFile, xmlFis));
+                }
+                tileInfosDO.setImagesetid(param.getImagesetid());
                 tileInfosDO.setDataPath(imgName);
-                //态势信息入库(新增)
-                tileInfosMapper.insertTilesInfo(tileInfosDO);
+                tileInfosMapper.insertTilesInfo(tileInfosDO);   //态势信息入库(新增)
+
                 fileFileCount++;
                 while (len % 1000 == 0){
                     sqlSession.commit();
                 }
             }
-            baos.close();
             imgFis.close();
             visualFis.close();
             xmlFis.close();
@@ -351,8 +393,15 @@ public class StorageServiceImpl implements StorageService {
             imageDataSetInfoDO.setNumber(fileFileCount);
             imageDatasetMapper.updateNumber(imageDataSetInfoDO);
         }
-
-        return new CommonResponseDTO().success().message("文件上传成功");
     }
 
+    private void deleteFile(File file){
+        File[] files = file.listFiles();
+        if (files != null && files.length != 0){
+            for (int i=0; i<files.length; i++){
+                deleteFile(files[i]);
+            }
+        }
+        file.delete();
+    }
 }
