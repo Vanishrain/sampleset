@@ -13,9 +13,8 @@ import java.util.List;
 public class TileInfoStatParamsDTO {
     private String timeStep = "%Y-%m";
     private Date endTime = new Date();
+    private List<String> imageSetIdList =null;
     private Date beginTime = new Date(1546272000000l);
-    private List<String> imagesetid=null;
-    private Integer imagesetidPre=null;
 
 
     public void setTimeStep(String step){
@@ -28,13 +27,12 @@ public class TileInfoStatParamsDTO {
 
         }
     }
-    public void setImagesetid(String ids){
-        this.imagesetid=Arrays.asList(ids.split(","));
+    public void setImageSetIdList(String imageSetIdList){
+        this.imageSetIdList =Arrays.asList(imageSetIdList.split(","));
     }
     public void setBeginTime(long beginTime){
         this.beginTime = new Date(beginTime);
     }
 
-    public void setEndTime (long endTime){ this.endTime = new Date(endTime);
-    }
+    public void setEndTime (long endTime){ this.endTime = new Date(endTime); }
 }

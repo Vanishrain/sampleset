@@ -2,10 +2,7 @@ package cn.iecas.datasets.image.service;
 
 
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
-import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
-import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
-import cn.iecas.datasets.image.pojo.dto.TileRequestDTO;
-import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
+import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 
 import java.util.List;
@@ -46,7 +43,7 @@ public interface ImageDataSetsService {
      * @param imageDatasetInfoRequestDTO
      * @return
      */
-    List<ImageDataSetInfoDO> listImageDatasetInfoDetail(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO);
+    ImageDataSetInfoDTO listImageDatasetInfoDetail(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO);
 
     /**
      * 根据id删除对应数据集，同时会删除数据

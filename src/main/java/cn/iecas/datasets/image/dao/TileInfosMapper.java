@@ -22,6 +22,6 @@ public interface TileInfosMapper extends BaseMapper<TileInfosDO> {
     TileInfosDO getTileByName(int tileId);
     IPage<String> getAll(Page page, int imageDatasetId);
     List<TileInfoStatistic> getStatistic(TileInfoStatParamsDTO tileInfoStatParamsDTO);
-    int getImageDataSetId(int tileId);
-    List<TileInfosDO> getAllTileById(int imagesetid);
+    List<TileInfoStatistic> getStatisticByDataSets(TileInfoStatParamsDTO tileInfoStatParamsDTO);
+
 }

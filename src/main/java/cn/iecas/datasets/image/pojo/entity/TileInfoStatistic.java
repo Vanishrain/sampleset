@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class TileInfoStatistic {
-     private String step;
-     private Integer count;
+    private String step;
+    private Integer count;
+    private int imageSetId;
 }

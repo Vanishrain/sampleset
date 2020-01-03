@@ -4,16 +4,10 @@ import cn.iecas.datasets.image.annotation.Log;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultStatus;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
 import cn.iecas.datasets.image.service.StorageService;
 import cn.iecas.datasets.image.service.TileInfosService;
-import cn.iecas.datasets.image.utils.Constants;
-import cn.iecas.datasets.image.utils.FastDFSUtil;
 import cn.iecas.datasets.image.utils.FileMD5Util;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -119,7 +113,7 @@ public class TileInfoController {
     @Log("根据数据集id返回返回属于该id的切片的年月日数据增长信息，当不指定id是则默认返回全部")
     @GetMapping(value = "/statistic")
     public CommonResponseDTO statistic(TileInfoStatParamsDTO statParams){
-        if(statParams.getImagesetid()!=null){
+        if(statParams.getImageSetIdList()!=null){
             TileInfoStatisticResponseDTO tileInfoStatisticResponseDTO=tileInfosService.getStatisticByIds(statParams);
             return new CommonResponseDTO().success().data(tileInfoStatisticResponseDTO).message("统计数据集切片信息成功");
         }else{

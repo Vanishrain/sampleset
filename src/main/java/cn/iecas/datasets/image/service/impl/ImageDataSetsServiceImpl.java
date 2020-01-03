@@ -3,11 +3,8 @@ package cn.iecas.datasets.image.service.impl;
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
-import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
-import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
-import cn.iecas.datasets.image.pojo.dto.TileRequestDTO;
+import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
-import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.Statistic;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
@@ -97,14 +94,17 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      * @return
      */
     @Override
-    public List<ImageDataSetInfoDO> listImageDatasetInfoDetail(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO) {
+    public ImageDataSetInfoDTO listImageDatasetInfoDetail(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO) {
+        ImageDataSetInfoDTO imageDataSetInfoDTO = new ImageDataSetInfoDTO();
         int pageNo = imageDatasetInfoRequestDTO.getPageNo() !=0 ? imageDatasetInfoRequestDTO.getPageNo() : 1;
         int pageSize = imageDatasetInfoRequestDTO.getPageSize() !=0 ? imageDatasetInfoRequestDTO.getPageSize() : 10;
         Page<ImageDataSetInfoDO> page = new Page<>();
         page.setCurrent(pageNo);
         page.setSize(pageSize);
         List<ImageDataSetInfoDO> imageDataSetInfoDOList = this.baseMapper.listImageDataSetInfos(page, imageDatasetInfoRequestDTO);
-        return imageDataSetInfoDOList;
+        imageDataSetInfoDTO.setTotal(imageDataSetInfoDOList.size());
+        imageDataSetInfoDTO.setList(imageDataSetInfoDOList);
+        return imageDataSetInfoDTO;
     }
 
     public ImageDataSetInfoDO getImageDatasetInfoById(int imageDatasetId){

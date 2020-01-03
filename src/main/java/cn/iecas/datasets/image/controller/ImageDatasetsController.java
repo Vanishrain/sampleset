@@ -5,6 +5,7 @@ import cn.iecas.datasets.image.common.controller.BaseController;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.dto.CommonResponseDTO;
+import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoDTO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
@@ -37,20 +38,14 @@ public class ImageDatasetsController extends BaseController {
     BaseDataSource baseDataSource;
 
 
-    @Log("查询影像数据集信息详情")
+    @Log("查询样本集信息详情")
     @GetMapping(value = "/detail")
     @CrossOrigin
     public CommonResponseDTO listImageDatasetInfos(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO){
-        List<ImageDataSetInfoDO> imageDataSetInfoDOList = imageDatasetsService.listImageDatasetInfoDetail(imageDatasetInfoRequestDTO);
-        return new CommonResponseDTO().success().data(imageDataSetInfoDOList);
+        ImageDataSetInfoDTO imageDataSetInfoDTO = imageDatasetsService.listImageDatasetInfoDetail(imageDatasetInfoRequestDTO);
+        return new CommonResponseDTO().success().data(imageDataSetInfoDTO).message("查询样本集信息成功");
     }
 
-//    @GetMapping(value = "/visualimg/{datasetId}/{imageName}")
-//    public CommonResponseDTO<Tile> getLabeledImg(@PathVariable int datasetId, @PathVariable String imageName){
-//        imageName = imageName.contains("mt") ? imageName.replaceAll("mt", "%") : imageName;
-//        Tile image = imageDatasetsService.getImageByName(datasetId, imageName, "visual");
-//        return new CommonResponseDTO<Tile>().success().data(image).message("查询标注影像数据成功");
-//    }
 
     //deleteImageDataSetByIds 未实现删除fastdfs中的数据
     @Log("删除指定id的影像数据集")
@@ -58,7 +53,7 @@ public class ImageDatasetsController extends BaseController {
     public CommonResponseDTO deleteImageDataSetById(@PathVariable String idList) throws Exception {
         List<String> dataSetIdList= Arrays.asList(idList.split(","));
         imageDatasetsService.deleteImageDataSetByIds(dataSetIdList);
-        return new CommonResponseDTO().success().message("成功删除影像数据信息还有对应的切片信息,或者要删除的数据集本身就不存在");
+        return new CommonResponseDTO().success().message("成功删除影像数据信息还有对应的切片信息");
     }
 
     /**
@@ -66,9 +61,9 @@ public class ImageDatasetsController extends BaseController {
      * @param imageDataSetInfoDO
      * @return
      */
-    @Log("增加指定id的影像数据集")
+    @Log("增加影像数据集信息")
     @PostMapping(value = "/add")
-    public CommonResponseDTO addImageDataSet(ImageDataSetInfoDO imageDataSetInfoDO){
+    public CommonResponseDTO addImageDataSet(@RequestBody ImageDataSetInfoDO imageDataSetInfoDO){
         imageDatasetsService.insertImageDataSet(imageDataSetInfoDO);
         return new CommonResponseDTO().success().message("成功插入影像数据信息");
     }
