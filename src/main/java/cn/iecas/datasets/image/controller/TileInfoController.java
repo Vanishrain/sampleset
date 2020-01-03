@@ -19,6 +19,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotEmpty;
 import javax.websocket.server.PathParam;
 import java.io.File;
@@ -73,9 +74,16 @@ public class TileInfoController {
 
     @Log("下载切片压缩包")
     @GetMapping("/downloadTile/{imagesetid}")
-    public CommonResponseDTO downloadTile(@NotEmpty @PathVariable int imagesetid) throws IOException {
-        storageService.download(imagesetid);
-        return new CommonResponseDTO().success().message("下载完成！");
+    @ResponseBody
+    public void downloadTile(@NotEmpty @PathVariable int imagesetid){
+        try {
+            storageService.download(imagesetid);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+//        return new CommonResponseDTO().success().message("下载完成！");
     }
 
     @Log("秒传判断，断点判断")

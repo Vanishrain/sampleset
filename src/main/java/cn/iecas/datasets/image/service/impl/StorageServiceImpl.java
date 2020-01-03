@@ -7,10 +7,7 @@ import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
 import cn.iecas.datasets.image.service.StorageService;
-import cn.iecas.datasets.image.utils.CompressUtil;
-import cn.iecas.datasets.image.utils.Constants;
-import cn.iecas.datasets.image.utils.FastDFSUtil;
-import cn.iecas.datasets.image.utils.FileMD5Util;
+import cn.iecas.datasets.image.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -24,8 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -110,7 +110,7 @@ public class StorageServiceImpl implements StorageService {
     * 下载
     * */
     @Override
-    public void download(int imagesetid) throws IOException {
+    public void download(int imagesetid) throws IOException, InterruptedException {
         File downloadDir = new File(downloadPath);  //下载根目录
         if (!downloadDir.exists()){
             downloadDir.mkdirs();
@@ -129,6 +129,7 @@ public class StorageServiceImpl implements StorageService {
         * 遍历获取分片的存储路径
         * */
         List<TileInfosDO> tileInfosDOs = tileInfosMapper.getAllTileById(imagesetid);
+        String compressFileName = imageDatasetMapper.getImageDataSetById(imagesetid).getName() + ".rar"; //数据集名称
         String imgStoragePath;
         String visualStoragePath;
         String xmlStoragePath;
@@ -152,38 +153,66 @@ public class StorageServiceImpl implements StorageService {
             byte[] visualByteArray = baseDataSource.download(visualStoragePath);
             byte[] xmlStorageByteArray = baseDataSource.download(xmlStoragePath);
 
-            System.out.println("正在下载" + commonFileName + "相关文件");
+            System.out.println("正在下载" + commonFileName + "相关文件到本地");
             imgOS.write(imgByteArray);
             imgOS.close();
             visualOS.write(visualByteArray);
             visualOS.close();
             xmlOS.write(xmlStorageByteArray);
             xmlOS.close();
-            System.out.println(commonFileName + "下载完成");
+            System.out.println(commonFileName + "下载完成！");
+        }
+        if (imgDir.listFiles()==null && visualDir.listFiles()==null && xmlsDir.listFiles()==null){
+            try {
+                throw new Exception("下载文件夹为空，下载失败！");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         /*
         * 删除空文件夹
         * */
         if (imgDir.listFiles() == null){
-            imgDir.delete();
+            deleteFile(imgDir);
         }
         if (visualDir.listFiles() == null){
-            visualDir.delete();
+            deleteFile(visualDir);
         }
         if (xmlsDir.listFiles() == null){
-            xmlsDir.delete();
+            deleteFile(xmlsDir);
         }
 
         /*
         * 压缩
         * */
-        String compressCommand = "rar a " + downloadDir + File.separator + "tile.rar " + downloadDir;
-        Runtime.getRuntime().exec(compressCommand);
+        String compressTargetFile = downloadDir + File.separator + compressFileName;
+        String compressCommand = "rar m -r -ep1 " + compressTargetFile + " " + downloadDir + "\\*";
+        Process process = Runtime.getRuntime().exec(compressCommand);
+        new RunThread(process.getInputStream(), "INFO").start();
+        new RunThread(process.getErrorStream(), "ERROR").start();
+        process.waitFor();
         System.out.println("文件压缩完成");
 
-        //TODO 删除三个文件夹
-        //TODO 返回给前端下载流
+        /*
+        * 返回下载流
+        * */
+        File compressedFile = new File(downloadDir + File.separator + compressFileName);
+        InputStream in = new BufferedInputStream(new FileInputStream(compressedFile));
+        byte[] buffer = new byte[in.available()];
+        in.read(buffer);
+        in.close();
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletResponse response = servletRequestAttributes.getResponse();
+        response.reset();   //清空response
+        response.setContentType("application/octet-stream;charset=UTF-8");
+        String fileName = new String(compressFileName.getBytes("gb2312"), "iso8859-1");
+        response.setHeader("Content-disposition", "attachment;filename=" + fileName);
+        OutputStream out = response.getOutputStream();
+        out.write(buffer);
+        out.flush();
+
+        compressedFile.delete();
     }
 
     /**
@@ -395,13 +424,40 @@ public class StorageServiceImpl implements StorageService {
         }
     }
 
-    private void deleteFile(File file){
-        File[] files = file.listFiles();
-        if (files != null && files.length != 0){
-            for (int i=0; i<files.length; i++){
-                deleteFile(files[i]);
+    private boolean deleteFile(File file){
+        if (!file.exists()){
+            return false;
+        }
+        if (file.isDirectory()){
+            File[] files = file.listFiles();
+            for (File file1 : files){
+                deleteFile(file1);
             }
         }
-        file.delete();
+        return file.delete();
+    }
+}
+
+class RunThread extends Thread{
+    InputStream is;
+    String type;
+
+    RunThread(InputStream is, String type){
+        this.is = is;
+        this.type = type;
+    }
+
+    @Override
+    public void run() {
+        try {
+            InputStreamReader isr = new InputStreamReader(is);
+            BufferedReader br = new BufferedReader(isr);
+            String line = null;
+            while ((line = br.readLine()) != null){
+                System.out.println(type + ">" + line);
+            }
+        } catch (IOException ioe){
+            ioe.printStackTrace();
+        }
     }
 }

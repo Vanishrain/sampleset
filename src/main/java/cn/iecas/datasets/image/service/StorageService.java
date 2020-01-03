@@ -10,5 +10,5 @@ import java.io.IOException;
 public interface StorageService {
     void uploadTiles(MultipartFileParam param, HttpServletRequest request) throws Exception;
 
-    void download(int imagesetid) throws IOException;
+    void download(int imagesetid) throws IOException, InterruptedException;
 }

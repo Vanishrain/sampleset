@@ -39,6 +39,7 @@ public class ImageDatasetsController extends BaseController {
 
     @Log("查询影像数据集信息详情")
     @GetMapping(value = "/detail")
+    @CrossOrigin
     public CommonResponseDTO listImageDatasetInfos(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO){
         List<ImageDataSetInfoDO> imageDataSetInfoDOList = imageDatasetsService.listImageDatasetInfoDetail(imageDatasetInfoRequestDTO);
         return new CommonResponseDTO().success().data(imageDataSetInfoDOList);

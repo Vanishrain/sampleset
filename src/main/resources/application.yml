@@ -75,6 +75,7 @@ value:
     compressedFile: rar,zip,tar
   fastdfsServer: 192.168.50.170:8888
   downloadPath: D:\\imagedataset\\tile\\
+  # compressedFileName: tile.rar
 
 breakpoint:
   upload:
