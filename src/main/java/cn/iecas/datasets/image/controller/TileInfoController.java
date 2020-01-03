@@ -4,6 +4,7 @@ import cn.iecas.datasets.image.annotation.Log;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
 import cn.iecas.datasets.image.service.StorageService;
 import cn.iecas.datasets.image.service.TileInfosService;
 import cn.iecas.datasets.image.utils.FileMD5Util;
@@ -77,7 +78,6 @@ public class TileInfoController {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-//        return new CommonResponseDTO().success().message("下载完成！");
     }
 
     @Log("秒传判断，断点判断")

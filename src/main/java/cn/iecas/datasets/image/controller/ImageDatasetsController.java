@@ -50,6 +50,7 @@ public class ImageDatasetsController extends BaseController {
     //deleteImageDataSetByIds 未实现删除fastdfs中的数据
     @Log("删除指定id的影像数据集")
     @DeleteMapping(value = "/{idList}")
+    @CrossOrigin
     public CommonResponseDTO deleteImageDataSetById(@PathVariable String idList) throws Exception {
         List<String> dataSetIdList= Arrays.asList(idList.split(","));
         imageDatasetsService.deleteImageDataSetByIds(dataSetIdList);

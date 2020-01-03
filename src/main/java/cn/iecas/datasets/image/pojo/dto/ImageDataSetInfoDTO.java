@@ -7,6 +7,6 @@ import java.util.List;
 
 @Data
 public class ImageDataSetInfoDTO {
-    private int total;
+    private long total;
     private List<ImageDataSetInfoDO> list;
 }

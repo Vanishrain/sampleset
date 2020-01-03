@@ -18,6 +18,8 @@ public interface TileInfosMapper extends BaseMapper<TileInfosDO> {
     void insertTilesInfo(TileInfosDO tileInfoDO);
     String getVisualPath(int tileId);
     String getStoragePath(String visualPath);
+    int getImageDataSetId(Integer tileIds);
+    List<TileInfosDO> getAllTileById(Integer imagesetid);
 //    TileInfosDO getTileByName(String imageName);
     TileInfosDO getTileByName(int tileId);
     IPage<String> getAll(Page page, int imageDatasetId);

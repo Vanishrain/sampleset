@@ -10,6 +10,7 @@ import cn.iecas.datasets.image.pojo.entity.Statistic;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
 import cn.iecas.datasets.image.service.TileInfosService;
 import cn.iecas.datasets.image.utils.FastDFSUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -101,9 +102,9 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
         Page<ImageDataSetInfoDO> page = new Page<>();
         page.setCurrent(pageNo);
         page.setSize(pageSize);
-        List<ImageDataSetInfoDO> imageDataSetInfoDOList = this.baseMapper.listImageDataSetInfos(page, imageDatasetInfoRequestDTO);
-        imageDataSetInfoDTO.setTotal(imageDataSetInfoDOList.size());
-        imageDataSetInfoDTO.setList(imageDataSetInfoDOList);
+        IPage imageDataSetInfoDOIPage = this.baseMapper.listImageDataSetInfos(page, imageDatasetInfoRequestDTO);
+        imageDataSetInfoDTO.setTotal(imageDataSetInfoDOIPage.getTotal());
+        imageDataSetInfoDTO.setList(imageDataSetInfoDOIPage.getRecords());
         return imageDataSetInfoDTO;
     }
 
@@ -130,7 +131,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      */
     @Override
     public void deleteImageDataSetById(int imageDataSetId) {
-        ImageDataSetInfoDO imageDataSetInfoDO = this.baseMapper.selectById(imageDataSetId);
+//        ImageDataSetInfoDO imageDataSetInfoDO = this.baseMapper.selectById(imageDataSetId);
         int flag = this.baseMapper.deleteById(imageDataSetId);
         if(flag!=0){
             tileInfosService.deleteByImageDatasetId(imageDataSetId);
