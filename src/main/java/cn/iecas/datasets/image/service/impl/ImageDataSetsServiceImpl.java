@@ -3,6 +3,7 @@ package cn.iecas.datasets.image.service.impl;
 import cn.iecas.datasets.image.dao.ImageDatasetMapper;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
+import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.*;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
@@ -77,14 +78,18 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
             return new TileSetDTO();
         }
 
-        List<String> imagePathList = (List<String>) tileInfosMapper.getAll(new Page(tileRequestDTO.getPageNo(), tileRequestDTO.getPageSize()), tileRequestDTO.getImageDatasetId());
-        TileSetDTO tileSetDTO = null;
+        IPage<TileInfosDO> iPageImageList = tileInfosMapper.listTilesByDataSetId(new Page(tileRequestDTO.getPageNo(), tileRequestDTO.getPageSize()), tileRequestDTO);
+        List<TileInfosDO> imagePathList = iPageImageList.getRecords();
+
+        TileSetDTO tileSetDTO = new TileSetDTO();
         try {
-            tileSetDTO = baseDataSource.getImages(imagePathList);
+            List<Tile> tileList = baseDataSource.getImages(imagePathList);
+            tileSetDTO.setTotalCount((int)iPageImageList.getTotal());
+            tileSetDTO.setTileList(tileList);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        tileSetDTO.setTotalCount(imageDataSetInfoDO.getNumber());
+
         return tileSetDTO;
     }
 
@@ -99,9 +104,11 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
         ImageDataSetInfoDTO imageDataSetInfoDTO = new ImageDataSetInfoDTO();
         int pageNo = imageDatasetInfoRequestDTO.getPageNo() !=0 ? imageDatasetInfoRequestDTO.getPageNo() : 1;
         int pageSize = imageDatasetInfoRequestDTO.getPageSize() !=0 ? imageDatasetInfoRequestDTO.getPageSize() : 10;
+
         Page<ImageDataSetInfoDO> page = new Page<>();
         page.setCurrent(pageNo);
         page.setSize(pageSize);
+
         IPage imageDataSetInfoDOIPage = this.baseMapper.listImageDataSetInfos(page, imageDatasetInfoRequestDTO);
         imageDataSetInfoDTO.setTotal(imageDataSetInfoDOIPage.getTotal());
         imageDataSetInfoDTO.setList(imageDataSetInfoDOIPage.getRecords());
@@ -118,7 +125,7 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      * @param datasetIds
      */
     @Override
-    public  void  deleteImageDataSetByIds(List<String> datasetIds) {
+    public  void  deleteImageDataSetByIds(List<String> datasetIds) throws Exception {
         for(String temp:datasetIds) {
             deleteImageDataSetById(Integer.valueOf(temp));
         }
@@ -130,13 +137,14 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      * @param imageDataSetId
      */
     @Override
-    public void deleteImageDataSetById(int imageDataSetId) {
-//        ImageDataSetInfoDO imageDataSetInfoDO = this.baseMapper.selectById(imageDataSetId);
+    public void deleteImageDataSetById(int imageDataSetId) throws Exception {
         int flag = this.baseMapper.deleteById(imageDataSetId);
         if(flag!=0){
-            tileInfosService.deleteByImageDatasetId(imageDataSetId);
-            tileInfosMapper.deleteByImagesetid(imageDataSetId);
-            log.info("成功删除数据集:{}和数据集下的切片信息",imageDataSetId);
+            String deleteTileResult = tileInfosService.deleteByImageDatasetId(imageDataSetId);
+            if ("success".equals(deleteTileResult)){
+                tileInfosMapper.deleteByImagesetid(imageDataSetId);
+                log.info("成功删除数据集:{}和数据集下的切片信息",imageDataSetId);
+            }
         }else{
             log.info("id：{} 数据集不存在", imageDataSetId);
         }

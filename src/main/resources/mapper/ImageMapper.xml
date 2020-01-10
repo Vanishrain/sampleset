@@ -7,6 +7,7 @@
         select * from image_infos
         where id = #{id}
     </select>
+
     <update id="updateNumber" parameterType="cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO">
         update image_infos
         set number = #{number}
@@ -20,10 +21,7 @@
                 and id = #{imageDatasetInfoRequestDTO.id}
             </if>
             <if test="imageDatasetInfoRequestDTO.name!=null">
-                and name = #{imageDatasetInfoRequestDTO.name}
-            </if>
-            <if test="imageDatasetInfoRequestDTO.attribute!=null">
-                and attribute = #{imageDatasetInfoRequestDTO.attribute}
+                and name like CONCAT("%", #{imageDatasetInfoRequestDTO.name}, "%")
             </if>
             <if test="imageDatasetInfoRequestDTO.beginTime!=null">
                 <if test="imageDatasetInfoRequestDTO.endTime!=null">
@@ -38,8 +36,8 @@
     </select>
 
     <insert id="insertDataset" parameterType="cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO">
-        INSERT INTO image_infos(path,description,attribute,datasource,bit,band,datasize,definition,size,number,postfix,labelsize,labeldescription,labelpostfix,direction,construction,datatime,name,category)
-        values (#{path},#{description},#{attribute},#{datasource},#{bit},#{band},#{datasize},#{definition},#{size},#{number},#{postfix},#{labelsize},#{labeldescription},#{labelpostfix},#{direction},#{construction},#{datatime},#{name},#{category})
+        INSERT INTO image_infos(name,path,sensortype,datasource,datatime,category,config,resolution,band,bit,datasize,description,targetnum,number)
+        values (#{name},#{path},#{sensorType},#{dataSource},#{dataTime},#{category},#{config},#{resolution},#{bands},#{bit},#{dataSize},#{description},#{targetNum},#{number})
     </insert>
 
 
@@ -65,8 +63,8 @@
 <!--        SELECT * FROM image_infos-->
 <!--    </select>-->
 <!--    <insert id="addImageInfos" parameterType="cn.iecas.sampleservice.entity.tile.Tile">-->
-<!--        INSERT INTO image_infos(path,description,attribute,datasource,bit,band,datasize,definition,size,number,postfix,labelsize,labeldescription,labelpostfix,direction,construction,datatime,name,category)-->
-<!--        values (#{path},#{description},#{attribute},#{datasource},#{bit},#{band},#{datasize},#{definition},#{size},#{number},#{postfix},#{labelsize},#{labeldescription},#{labelpostfix},#{direction},#{construction},#{datatime},#{name},#{category})-->
+<!--        INSERT INTO image_infos(path,description,attribute,datasource,bit,band,dataSize,definition,size,number,postfix,labelSize,labelDescription,labelPostfix,direction,construction,datatime,name,category)-->
+<!--        values (#{path},#{description},#{attribute},#{datasource},#{bit},#{band},#{dataSize},#{definition},#{size},#{number},#{postfix},#{labelSize},#{labelDescription},#{labelPostfix},#{direction},#{construction},#{datatime},#{name},#{category})-->
 <!--    </insert>-->
 
 <!--    <select id="findByImage" parameterType="cn.iecas.sampleservice.entity.tile.Tile" resultType="cn.iecas.sampleservice.entity.tile.Tile">-->

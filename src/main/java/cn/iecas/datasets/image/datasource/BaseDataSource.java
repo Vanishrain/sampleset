@@ -1,9 +1,13 @@
 package cn.iecas.datasets.image.datasource;
 
+import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import org.csource.common.MyException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.List;
 
 @Component
@@ -34,8 +38,8 @@ public interface BaseDataSource {
 
     String getImageByPath( String path);
 
-    void deletes(int tileId);
-    byte[] download(String fileId);
+    void deletes(int tileId) throws Exception;
+    byte[] download(String fileId) throws Exception;
 
     /**
      * 根据切片名称删除数据集中的切片
@@ -50,6 +54,5 @@ public interface BaseDataSource {
      * @param imagePathList
      * @return
      */
-    TileSetDTO getImages(List<String> imagePathList) throws Exception;
-
+    List<Tile> getImages(List<TileInfosDO> tileInfosDOS) throws Exception;
 }

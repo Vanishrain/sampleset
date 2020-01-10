@@ -29,8 +29,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -91,12 +94,16 @@ public class StorageServiceImpl implements StorageService {
     * 上传文件
     * */
     @Override
-    public void uploadTiles(MultipartFileParam param, HttpServletRequest request) throws Exception {
+    public String uploadTiles(MultipartFileParam param, HttpServletRequest request) throws Exception {
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+        String uploadResult = "fail";
 
         if (isMultipart) {
             try {
-                uploadFileByMappedByteBuffer(param); //上传过程
+                if (0 == param.getImagesetid()){
+                    throw new Exception("该数据集不存在，请先添加数据集!");
+                }
+                uploadResult = uploadFileByMappedByteBuffer(param); //上传过程
             } catch (IOException e) {
                 e.printStackTrace();
                 log.error("文件上传失败! {}", param.toString());
@@ -104,13 +111,15 @@ public class StorageServiceImpl implements StorageService {
         } else {
             throw new Exception("请选择文件上传");
         }
+
+        return uploadResult;
     }
 
     /*
     * 下载
     * */
     @Override
-    public void download(int imagesetid) throws IOException, InterruptedException {
+    public void download(int imagesetid) throws Exception {
         File downloadDir = new File(downloadPath);  //下载根目录
         if (!downloadDir.exists()){
             downloadDir.mkdirs();
@@ -129,6 +138,9 @@ public class StorageServiceImpl implements StorageService {
         * 遍历获取分片的存储路径
         * */
         List<TileInfosDO> tileInfosDOs = tileInfosMapper.getAllTileById(imagesetid);
+        if (tileInfosDOs == null || tileInfosDOs.size() == 0){
+            throw new Exception("下载失败！该数据集无相应切片");
+        }
         String compressFileName = imageDatasetMapper.getImageDataSetById(imagesetid).getName() + ".rar"; //数据集名称
         String imgStoragePath;
         String visualStoragePath;
@@ -151,26 +163,28 @@ public class StorageServiceImpl implements StorageService {
 
             byte[] imgByteArray = baseDataSource.download(imgStoragePath);
             byte[] visualByteArray = baseDataSource.download(visualStoragePath);
-            byte[] xmlStorageByteArray = baseDataSource.download(xmlStoragePath);
-
-            System.out.println("正在下载" + commonFileName + "相关文件到本地");
-            imgOS.write(imgByteArray);
-            imgOS.close();
-            visualOS.write(visualByteArray);
-            visualOS.close();
-            xmlOS.write(xmlStorageByteArray);
-            xmlOS.close();
-            System.out.println(commonFileName + "下载完成！");
+            byte[] xmlByteArray = baseDataSource.download(xmlStoragePath);
+            if (imgByteArray != null){
+                imgOS.write(imgByteArray);
+                imgOS.close();
+            }if (visualByteArray != null){
+                visualOS.write(visualByteArray);
+                visualOS.close();
+            }if (xmlByteArray != null){
+                xmlOS.write(xmlByteArray);
+                xmlOS.close();
+            }
         }
         if (imgDir.listFiles()==null && visualDir.listFiles()==null && xmlsDir.listFiles()==null){
             try {
-                throw new Exception("下载文件夹为空，下载失败！");
+                throw new Exception("下载失败，该数据集无对应切片");
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
         /*
+        下载完成后删除某一空文件夹
         * 删除空文件夹
         * */
         if (imgDir.listFiles() == null){
@@ -206,13 +220,15 @@ public class StorageServiceImpl implements StorageService {
         HttpServletResponse response = servletRequestAttributes.getResponse();
         response.reset();   //清空response
         response.setContentType("application/octet-stream;charset=UTF-8");
-        String fileName = new String(compressFileName.getBytes("gb2312"), "iso8859-1");
-        response.setHeader("Content-disposition", "attachment;filename=" + fileName);
+        String fileName = new String(compressFileName.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        response.setHeader("Content-disposition", "attachment;filename=" + java.net.URLEncoder.encode(compressFileName,"UTF-8"));
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+        compressedFile.delete();
         OutputStream out = response.getOutputStream();
         out.write(buffer);
         out.flush();
-
-        compressedFile.delete();
+        out.close();
     }
 
     /**
@@ -320,7 +336,7 @@ public class StorageServiceImpl implements StorageService {
     /*
      * 上传文件过程
      * */
-    private void uploadFileByMappedByteBuffer(MultipartFileParam param) throws IOException {
+    private String uploadFileByMappedByteBuffer(MultipartFileParam param) throws IOException {
         String fileName = param.getName();
         String uploadDirPath = rootPath + "\\" + param.getMd5();   //上传文件所在目录
         String decompressDirPath = uploadDirPath;  //解压文件所在路径
@@ -366,16 +382,19 @@ public class StorageServiceImpl implements StorageService {
                     imageFilePostfix);
 
             /*
-             * 上传至服务器
+             * 上传至文件系统
              * */
             TileInfosDO tileInfosDO = new TileInfosDO();
             ImageDataSetInfoDO imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(param.getImagesetid());
-            int fileFileCount = imageDataSetInfoDO.getNumber(); //上传文件数量
+            if (imageDataSetInfoDO == null){
+                return "上传失败，请选择待上传切片的数据集！";
+            }
+            long fileFileCount = imageDataSetInfoDO.getNumber(); //上传文件数量
             FileInputStream imgFis = null;
             FileInputStream visualFis = null;
             FileInputStream xmlFis = null;
 
-            String tileFileRootDirPath = decompressDirPath + "\\car";   //"D:\\JCP\\YXCP_YGYX\\IMG\\d2d540edd0a8cd41071aad778b98a6e3\\car";
+            String tileFileRootDirPath = decompressDirPath + "\\car";
             String imgsDir = tileFileRootDirPath + File.separator + "imgs";
             String visualDir = tileFileRootDirPath + File.separator + "visual";
             String xmlsDir = tileFileRootDirPath + File.separator + "xmls";
@@ -408,6 +427,7 @@ public class StorageServiceImpl implements StorageService {
                 }
                 tileInfosDO.setImagesetid(param.getImagesetid());
                 tileInfosDO.setDataPath(imgName);
+                tileInfosDO.setCreateTime();
                 tileInfosMapper.insertTilesInfo(tileInfosDO);   //态势信息入库(新增)
 
                 fileFileCount++;
@@ -418,10 +438,13 @@ public class StorageServiceImpl implements StorageService {
             imgFis.close();
             visualFis.close();
             xmlFis.close();
-            //图像信息更新(number)
             imageDataSetInfoDO.setNumber(fileFileCount);
             imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+
+            return "success";
         }
+
+        return "fail";
     }
 
     private boolean deleteFile(File file){

@@ -5,6 +5,7 @@ import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.TileSetDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.utils.FastDFSUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.sun.image.codec.jpeg.JPEGCodec;
 import com.sun.image.codec.jpeg.JPEGImageEncoder;
 import org.csource.common.MyException;
@@ -27,12 +28,8 @@ public class FDFSSourceImpl implements BaseDataSource {
     @Autowired
     public TileInfosMapper tileInfosMapper;
 
-    /**
-     * 关闭数据源连接
-     */
     @Override
     public void close() {
-
     }
 
 
@@ -66,7 +63,7 @@ public class FDFSSourceImpl implements BaseDataSource {
         byte[] result = null;
         try {
             result = storageClient.download_file1(visualPath);
-            printTile(result,"d:\\test.jpg",500);
+//            printTile(result,"d:\\test.jpg",500);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (MyException e) {
@@ -128,23 +125,33 @@ public class FDFSSourceImpl implements BaseDataSource {
     }
 
     @Override
-    public void deletes(int tileId){
+    public void deletes(int tileId) throws Exception {
         String storagePath;
         String visualPath;
         String labelPath;
 
         TileInfosDO tileInfosDO = tileInfosMapper.getTileByName(tileId);
-        storagePath = tileInfosDO.getStoragePath();
-        visualPath = tileInfosDO.getVisualPath();
-        labelPath = tileInfosDO.getLabelPath();
+        if (tileInfosDO != null){
+            storagePath = tileInfosDO.getStoragePath();
+            visualPath = tileInfosDO.getVisualPath();
+            labelPath = tileInfosDO.getLabelPath();
 
-        FastDFSUtil.delete(storagePath);
-        FastDFSUtil.delete(visualPath);
-        FastDFSUtil.delete(labelPath);
+            if (storagePath != null){
+                FastDFSUtil.delete(storagePath);
+            }
+            if (visualPath != null){
+                FastDFSUtil.delete(visualPath);
+            }
+            if (labelPath != null){
+                FastDFSUtil.delete(labelPath);
+            }
+        }else {
+            throw new Exception("该切片不存在");
+        }
     }
 
     @Override
-    public byte[] download(String fileId) {
+    public byte[] download(String fileId) throws Exception {
         return FastDFSUtil.download(fileId);
     }
 
@@ -160,34 +167,42 @@ public class FDFSSourceImpl implements BaseDataSource {
 
     /**
      * 分页获取数据集切片
-     * @param imagePathList
+     * @param tileInfosDOS
      * @return
      */
     @Override
-    public TileSetDTO getImages(List<String> imagePathList) throws Exception{
-        TileSetDTO tileSetDTO = new TileSetDTO();
-        Tile tile = new Tile();
+    public List<Tile> getImages(List<TileInfosDO> tileInfosDOS) throws Exception {
+//        TileSetDTO tileSetDTO = new TileSetDTO();
         List<Tile> tileList = new ArrayList<>();
 
         StorageClient1 storageClient = FastDFSUtil.getSrorageClient();
         BASE64Encoder encoder = new BASE64Encoder();
         byte[] result;
-        int len = imagePathList.size();
-        String imagePath;
+        String storagePath;
 
-        for (int i=0; i<len; i++){
-            imagePath = imagePathList.get(i);
-            result = storageClient.download_file1(imagePath);
-            String encodedimageData = encoder.encode(result);
-            String imageBase64String = ("data:image/jpeg;base64," + encodedimageData).replaceAll("\r|\n", "");
-            tile.setName(tileInfosMapper.getNameByPath(imagePath));
-            tile.setBase64Tile(imageBase64String);
-            tileList.add(tile);
+        for (TileInfosDO tileInfosDO : tileInfosDOS){
+            storagePath = tileInfosDO.getStoragePath();   //存储路径
+            if (storagePath != null){
+                result = storageClient.download_file1(storagePath);
+                if (result != null){
+                    String encodedimageData = encoder.encode(result);
+                    String imageBase64String = ("data:image/jpeg;base64," + encodedimageData).replaceAll("\r|\n", "");
+
+                    Tile tile = new Tile();
+                    tile.setBase64Tile(imageBase64String);
+                    tile.setId(tileInfosDO.getId());
+                    tile.setName(tileInfosDO.getDataPath());
+                    tile.setCreateTime(tileInfosDO.getCreateTime());
+                    tileList.add(tile);
+                }else {
+                    continue;
+                }
+            } else {
+                return null;
+            }
         }
 
-        tileSetDTO.setTileList(tileList);
-
-        return tileSetDTO;
+        return tileList;
     }
 
 }

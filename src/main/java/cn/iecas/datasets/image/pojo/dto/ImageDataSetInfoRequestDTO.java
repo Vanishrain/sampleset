@@ -2,6 +2,7 @@ package cn.iecas.datasets.image.pojo.dto;
 
 import lombok.Data;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -20,11 +21,22 @@ public class ImageDataSetInfoRequestDTO {
     private String name;
 
     //时间范围
-    private Date endTime;
+//    private Date endTime;
+    private String endTime;
 
     //时间范围
-    private Date beginTime;
-
+//    private Date beginTime;
+    private String beginTime;
 
     private String attribute;
+
+    public void setBeginTime(long beginTime){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        this.beginTime = simpleDateFormat.format(beginTime);
+    }
+
+    public void setEndTime(long endTime){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        this.endTime = simpleDateFormat.format(endTime);
+    }
 }

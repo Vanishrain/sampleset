@@ -11,9 +11,8 @@ import java.util.List;
 @Data
 public class TileSetDTO {
 
-    private Integer pageNo;
+//    private Integer pageNo;
     private Integer totalCount;
     private List<Tile> tileList;
-
 
 }

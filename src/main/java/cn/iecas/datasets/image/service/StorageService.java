@@ -8,7 +8,7 @@ import java.io.IOException;
  * 存储操作的service
  */
 public interface StorageService {
-    void uploadTiles(MultipartFileParam param, HttpServletRequest request) throws Exception;
+    String uploadTiles(MultipartFileParam param, HttpServletRequest request) throws Exception;
 
-    void download(int imagesetid) throws IOException, InterruptedException;
+    void download(int imagesetid) throws Exception;
 }

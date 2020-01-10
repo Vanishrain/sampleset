@@ -35,7 +35,7 @@ public class LogAspect {
             result = (CommonResponseDTO<?>) point.proceed();
             log.info("{} 方法执行完毕，返回参数 {}", methodName, result);
         }catch (Exception e){
-            result = new CommonResponseDTO<>().fail().message("出现异常").data(e.getMessage());
+            result = new CommonResponseDTO<>().fail().message(e.getMessage());
             log.error("{} 方法执行异常，返回参数 {}, 异常栈: {}", methodName, result, e.getStackTrace()[0]);
         }
 

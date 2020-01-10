@@ -14,14 +14,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotEmpty;
-import javax.websocket.server.PathParam;
-import java.io.File;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-
 
 @RestController
 @Slf4j
@@ -40,44 +34,53 @@ public class TileInfoController {
 
     @Log("根据切片主键批量删除")
     @DeleteMapping("/{tileIds}")
-    public CommonResponseDTO deleteImages(@NotEmpty @PathVariable Integer[] tileIds){
+    @CrossOrigin
+    public CommonResponseDTO deleteImages(@NotEmpty @PathVariable Integer[] tileIds) throws Exception {
         tileInfosService.deleteImages(tileIds);
         return new CommonResponseDTO().success().message("删除成功!");
     }
 
     @Log("分页查询切片数据")
     @GetMapping
-    public CommonResponseDTO listImagesByDatasetId(TileRequestDTO tileRequestDTO){
+    @CrossOrigin
+    public CommonResponseDTO listImagesByDatasetId(TileRequestDTO tileRequestDTO) throws Exception {
         TileSetDTO tileSetDTO = tileInfosService.listTilesByDataSetId(tileRequestDTO);
-        return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
+        if (tileSetDTO != null){
+            return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
+        }else {
+            throw new Exception("该数据集无切片");
+        }
     }
 
-    @Log("查询指定名称的影像")
+    @Log("查询指定影像")
+    @CrossOrigin
     @GetMapping(value = "/{tileId}/{type}")
-    public CommonResponseDTO<Tile> getImageByName(@PathVariable String tileId, @PathVariable String type ){
+    public CommonResponseDTO<Tile> getImageByName(@PathVariable String tileId, @PathVariable String type ) throws Exception {
         Tile tile = tileInfosService.getTileByName(tileId, type);
-        return new CommonResponseDTO<Tile>().success().data(tile).message("查询影像数据成功");
+        if (tile != null){
+            return new CommonResponseDTO<Tile>().success().data(tile).message("查询影像数据成功");
+        }else {
+            return new CommonResponseDTO<Tile>().message("暂无该类型切片");
+        }
     }
 
     @Log("批量增加切片数据，并且更新对应数据集")
     @PostMapping(value = "/upload")
     @CrossOrigin
     public CommonResponseDTO uploadTiles(MultipartFileParam param) throws Exception {
-        storageService.uploadTiles(param, request);
-        return new CommonResponseDTO().success().message("成功上传");
+        String uploadResult = storageService.uploadTiles(param, request);
+        if ("success".equals(uploadResult)){
+            return new CommonResponseDTO().success().message("成功上传");
+        } else {
+            return new CommonResponseDTO().success().message(uploadResult);
+        }
     }
 
     @Log("下载切片压缩包")
-    @GetMapping("/downloadTile/{imagesetid}")
-    @ResponseBody
-    public void downloadTile(@NotEmpty @PathVariable int imagesetid){
-        try {
-            storageService.download(imagesetid);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    @GetMapping(value = "/downloadTile/{imagesetid}")
+    @CrossOrigin
+    public void downloadTile(@NotEmpty @PathVariable int imagesetid) throws Exception {
+        storageService.download(imagesetid);
     }
 
     @Log("秒传判断，断点判断")
@@ -112,6 +115,7 @@ public class TileInfoController {
      */
     @Log("根据数据集id返回返回属于该id的切片的年月日数据增长信息，当不指定id是则默认返回全部")
     @GetMapping(value = "/statistic")
+    @CrossOrigin
     public CommonResponseDTO statistic(TileInfoStatParamsDTO statParams){
         if(statParams.getImageSetIdList()!=null){
             TileInfoStatisticResponseDTO tileInfoStatisticResponseDTO=tileInfosService.getStatisticByIds(statParams);
@@ -120,7 +124,5 @@ public class TileInfoController {
             TileInfoAllStatisticResponseDTO tileInfoAllStatisticResponseDTO=tileInfosService.getStatistic(statParams);
             return new CommonResponseDTO().success().data(tileInfoAllStatisticResponseDTO).message("统计全部切片信息成功");
         }
-
-
     }
 }
