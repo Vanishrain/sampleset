@@ -8,7 +8,7 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.50.233:3306/geo?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
+    url: jdbc:mysql://192.168.50.233:3306/geo?useSSL=false&useUnicode=true&characterEncoding=utf8
     username: root
     password: 123456
   redis:
@@ -26,6 +26,10 @@ spring:
     multipart:
       max-file-size:  5MB
       max-request-seize: 100MB
+    encoding:
+      force: true
+      charset: utf-8
+      enabled: true
   servlet:
     multipart:
       enabled: true
@@ -75,6 +79,7 @@ value:
     compressedFile: rar,zip,tar
   fastdfsServer: 192.168.50.170:8888
   downloadPath: D:\\imagedataset\\tile\\
+  # compressedFileName: tile.rar
 
 breakpoint:
   upload:

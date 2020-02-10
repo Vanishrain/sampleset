@@ -20,16 +20,32 @@ public class FastDFSUtil {
         }
     }
 
-    public static byte[] download(String fileId){
-        StorageClient1 storageClient1 = getSrorageClient();
+    /*
+    * 下载
+    * */
+    public static byte[] download(String fileId) throws Exception {
+        TrackerServer trackerServer2 = null;
+        StorageServer storageServer2 = null;
         try {
-            return storageClient1.download_file1(fileId);
-        } catch (IOException | MyException e) {
-            e.printStackTrace();
-        }finally {
-            FastDFSUtil.closeConnection();
+            TrackerClient trackerClient2 = new TrackerClient();
+            trackerServer2 = trackerClient2.getConnection();
+            StorageClient1 storageClient2 = new StorageClient1(trackerServer2, storageServer2);
+
+            return storageClient2.download_file1(fileId);
+        } catch (Exception e) {
+            throw new Exception("下载失败");
+        } finally {
+            try {
+                if (null != storageServer2){
+                    storageServer2.close();
+                }
+                if (null != trackerServer2){
+                    trackerServer2.close();
+                }
+            } catch (IOException e){
+                e.printStackTrace();
+            }
         }
-        return null;
     }
 
     /*
@@ -49,6 +65,8 @@ public class FastDFSUtil {
         } catch (MyException e) {
             e.printStackTrace();
             return result;
+        }finally {
+            closeConnection();
         }
     }
 

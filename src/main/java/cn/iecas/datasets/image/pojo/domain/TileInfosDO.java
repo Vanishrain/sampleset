@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @Data
@@ -29,10 +30,19 @@ public class TileInfosDO {
 
     public void setCreateTime(String time){
         try {
-            this.createTime=DateUtil.fromStringToDate(time,"yyyy-MM-dd HH:mm:ss");
+            this.createTime = DateUtil.fromStringToDate(time,"yyyy-MM-dd");
         } catch (ParseException e) {
             e.printStackTrace();
         }
     }
 
+    public void setCreateTime(){
+        try {
+            Date date = new Date();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            this.createTime = DateUtil.fromStringToDate(sdf.format(date), "yyyy-MM-dd HH:mm:ss");
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
 }

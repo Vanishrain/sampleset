@@ -18,8 +18,19 @@ public class DateUtil {
      * @return
      */
     public static Date fromStringToDate(String times,String pattern) throws ParseException {
-
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
         return simpleDateFormat.parse(times);
+    }
+
+    //日期转字符串
+    public static String fromDateToString(Date date, String pattern){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+        return simpleDateFormat.format(date);
+    }
+
+    //时间戳转字符串
+    public static String fromLongToString(long time, String pattern){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+        return simpleDateFormat.format(time);
     }
 }

@@ -40,15 +40,15 @@ public class ImageDatasetsController extends BaseController {
 
     @Log("查询样本集信息详情")
     @GetMapping(value = "/detail")
+    @CrossOrigin
     public CommonResponseDTO listImageDatasetInfos(ImageDataSetInfoRequestDTO imageDatasetInfoRequestDTO){
         ImageDataSetInfoDTO imageDataSetInfoDTO = imageDatasetsService.listImageDatasetInfoDetail(imageDatasetInfoRequestDTO);
         return new CommonResponseDTO().success().data(imageDataSetInfoDTO).message("查询样本集信息成功");
     }
 
-
-    //deleteImageDataSetByIds 未实现删除fastdfs中的数据
     @Log("删除指定id的影像数据集")
     @DeleteMapping(value = "/{idList}")
+    @CrossOrigin
     public CommonResponseDTO deleteImageDataSetById(@PathVariable String idList) throws Exception {
         List<String> dataSetIdList= Arrays.asList(idList.split(","));
         imageDatasetsService.deleteImageDataSetByIds(dataSetIdList);
@@ -62,6 +62,7 @@ public class ImageDatasetsController extends BaseController {
      */
     @Log("增加影像数据集信息")
     @PostMapping(value = "/add")
+    @CrossOrigin
     public CommonResponseDTO addImageDataSet(@RequestBody ImageDataSetInfoDO imageDataSetInfoDO){
         imageDatasetsService.insertImageDataSet(imageDataSetInfoDO);
         return new CommonResponseDTO().success().message("成功插入影像数据信息");
@@ -69,13 +70,15 @@ public class ImageDatasetsController extends BaseController {
 
     @Log("更新影像数据集信息")
     @PutMapping()
-    public CommonResponseDTO updateImageDataSetInfo(ImageDataSetInfoDO imageDataSetInfoDO){
+    @CrossOrigin
+    public CommonResponseDTO updateImageDataSetInfo(@RequestBody ImageDataSetInfoDO imageDataSetInfoDO){
         this.imageDatasetsService.updateImageDataSetInfoById(imageDataSetInfoDO);
         return new CommonResponseDTO().success().message("成功更新影像数据信息");
     }
 
     @Log("查看影像数据集统计信息")
     @GetMapping(value = "/statistic")
+    @CrossOrigin
     public CommonResponseDTO getStatistic(){
         ImageDataSetStatisticDTO imageDataSetStatisticDTO = imageDatasetsService.getStatistic();
         return new CommonResponseDTO().success().data(imageDataSetStatisticDTO).message("成功获取影像数据集统计信息");

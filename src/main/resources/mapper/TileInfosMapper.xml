@@ -2,8 +2,25 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.iecas.datasets.image.dao.TileInfosMapper">
+    <select id="getIdByPath" parameterType="list" resultType="TileInfosDO">
+        select id,dataPath,createTime from tile_infos
+        <where>
+            storagePath in
+            <foreach collection="imagePathList" item="imagePath" separator="," open="(" close=")">
+                #{imagePath}
+            </foreach>
+        </where>
+    </select>
+
+    <select id="getCreateTimeByPath" parameterType="String" resultType="java.util.Date">
+        select createTime
+        from tile_infos
+        where visualPath = #{imagePath}
+    </select>
+
     <select id="getAllTileById" parameterType="int" resultType="cn.iecas.datasets.image.pojo.domain.TileInfosDO">
-        select * from tile_infos
+        select *
+        from tile_infos
         where imagesetid=#{imagesetid}
     </select>
 
@@ -32,9 +49,19 @@
         where id = #{tileId}
     </select>
 
-    <select id="getAll" parameterType="int" resultType="String">
-        select visualPath from tile_infos
-        where imagesetid = #{imageDatasetId}
+    <select id="listTilesByDataSetId" parameterType="cn.iecas.datasets.image.pojo.dto.TileRequestDTO" resultType="cn.iecas.datasets.image.pojo.domain.TileInfosDO">
+        select storagePath,id,dataPath,createTime
+        from tile_infos
+        <where>
+            <if test="tileRequestDTO.imageDatasetId!=0">
+                and imagesetid = #{tileRequestDTO.imageDatasetId}
+            </if>
+            <if test="tileRequestDTO.beginTime!=null">
+                <if test="tileRequestDTO.endTime!=null">
+                    and createTime BETWEEN #{tileRequestDTO.beginTime} AND #{tileRequestDTO.endTime}
+                </if>
+            </if>
+        </where>
     </select>
 
     <delete id="deleteByImagesetid" parameterType="Integer">
@@ -50,8 +77,6 @@
     <select id="getStatistic" resultType="cn.iecas.datasets.image.pojo.entity.TileInfoStatistic" >
        SELECT DATE_FORMAT(createTime,#{timeStep}) as step,  COUNT(*) as count FROM tile_infos where createTime BETWEEN #{beginTime} AND #{endTime} GROUP BY step order by step
    </select>
-
-
 
     <select id="getStatisticByDataSets" resultType="cn.iecas.datasets.image.pojo.entity.TileInfoStatistic">
         SELECT DATE_FORMAT(createTime,#{timeStep}) as step, count(*) as count , imagesetid as imageSetId FROM tile_infos
