@@ -4,9 +4,6 @@ import org.csource.common.MyException;
 import org.csource.fastdfs.*;
 
 import java.io.*;
-
-import static org.csource.fastdfs.ClientGlobal.init;
-
 public class FastDFSUtil {
     private static String conf_filename = "src/main/resources/fdfs_client.conf";
     private static TrackerServer trackerServer = null;
@@ -14,7 +11,7 @@ public class FastDFSUtil {
 
     static {
         try {
-            init(conf_filename);   //根据配置文件初始化
+            ClientGlobal.init(conf_filename);   //根据配置文件初始化
         } catch (IOException | MyException e) {
             e.printStackTrace();
         }
@@ -24,23 +21,23 @@ public class FastDFSUtil {
     * 下载
     * */
     public static byte[] download(String fileId) throws Exception {
-        TrackerServer trackerServer2 = null;
-        StorageServer storageServer2 = null;
+        TrackerServer trackerServer = null;
+        StorageServer storageServer = null;
         try {
-            TrackerClient trackerClient2 = new TrackerClient();
-            trackerServer2 = trackerClient2.getConnection();
-            StorageClient1 storageClient2 = new StorageClient1(trackerServer2, storageServer2);
+            TrackerClient trackerClient = new TrackerClient();
+            trackerServer = trackerClient.getConnection();
+            StorageClient1 storageClient = new StorageClient1(trackerServer, storageServer);
 
-            return storageClient2.download_file1(fileId);
+            return storageClient.download_file1(fileId);
         } catch (Exception e) {
             throw new Exception("下载失败");
         } finally {
             try {
-                if (null != storageServer2){
-                    storageServer2.close();
+                if (null != storageServer){
+                    storageServer.close();
                 }
-                if (null != trackerServer2){
-                    trackerServer2.close();
+                if (null != trackerServer){
+                    trackerServer.close();
                 }
             } catch (IOException e){
                 e.printStackTrace();
@@ -114,29 +111,27 @@ public class FastDFSUtil {
     /*
     * 上传
     * */
-    public static String upload(File file, InputStream fis) {
+    public static String upload(File file) {
+        FileInputStream fileInputStream = null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
-            if (file == null){
-                throw  new Exception("上传文件为空");
-            }else {
-                String tempFileName = file.getName();
-
-                int len;
-                byte[] buffer = new byte[1024];
-                while ((len = fis.read(buffer)) != -1){
-                    baos.write(buffer, 0, len);
-                }
-                byte[] fileBuff = baos.toByteArray();
-
-                String fileExtName = tempFileName.substring(tempFileName.lastIndexOf(".")); //后缀
-
-                String fileId = getSrorageClient().upload_file1(fileBuff, fileExtName, null);
-                System.out.println("上传至服务的文件ID为：" + fileId);
-
-                return fileId;  //上传成功返回文件ID
+            if (null == file || !file.exists())
+                throw new Exception("上传文件为空");
+            fileInputStream = new FileInputStream(file);
+            String tempFileName = file.getName();
+            int len;
+            byte[] buffer = new byte[1024];
+            while ((len = fileInputStream.read(buffer)) != -1){
+                baos.write(buffer, 0, len);
             }
+            byte[] fileBuff = baos.toByteArray();
+
+            String fileExtName = tempFileName.substring(tempFileName.lastIndexOf(".")); //后缀
+
+            String fileId = getSrorageClient().upload_file1(fileBuff, fileExtName, null);
+            System.out.println("上传至服务的文件ID为：" + fileId);
+            return fileId;  //上传成功返回文件ID
         } catch (Exception e) {
             e.printStackTrace();
             return "文件上传失败 " + e.getMessage();
@@ -144,7 +139,7 @@ public class FastDFSUtil {
             try {
                 closeConnection();
                 baos.close();
-                fis.close();
+                fileInputStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }

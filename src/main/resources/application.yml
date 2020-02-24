@@ -8,13 +8,12 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.50.233:3306/geo?useSSL=false&useUnicode=true&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3306/geo?useSSL=false&useUnicode=true&characterEncoding=utf8
     username: root
     password: 123456
   redis:
-    host: 192.168.50.233
+    host: localhost
     port: 6379
-    password: 123456
     jedis:
       pool:
         min-idle: 3
@@ -47,37 +46,44 @@ mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   configuration:
     jdbc-type-for-null: null
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: false
   global-config:
     # 关闭 mybatis-plus的 banner
     banner: false
+  type-handlers-package: cn.iecas.datasets.image.common.typeHandler
 
 datasource:
   file:
     rootPath: sdfsdf
 
+fastdfs:
+  server: localhost:8888
+
 value:
+  fastdfs:
+    server: localhost:8888
   dir:
-    monitorDir: D:\\JCP\\YXCP_YGYX\\IMG\\  #本地上传路径
-    decompressRootDir: data\\fastdfs\\data\\ #/data/fastdfs/data/
-    decompressImgDir: D:\\YXCP_YGYX\\IMG\\  #解压路径
-    decompressThumbnailL: YXCP_YGYX\SLT\\
-    decompressThumbnailS: YXCP_YGYX\MZT\\
+    monitorDir: /Users/vanishrain/Desktop/upload  #本地上传路径
+    downloadDir: /Users/vanishrain/Desktop/upload/download
+    decompressRootDir: /Users/vanishrain/Desktop/upload #/data/fastdfs/data/
+    decompressImgDir: /Users/vanishrain/Desktop/upload  #解压路径
     #downloadDir: D:\\imagedataset\\tile\\
-  decompressCmd:
-    rar:
-      list: unrar lb
-      decompress: unrar -o+ x
-    zip:
-      list: unzip -l
-      decompress: unzip -q -o
-    tar:
-      list: tar -tf
-      decompress : tar -x  -C
+#  decompressCmd:
+#    rar:
+#      list: unrar lb
+#      decompress: unrar -o+ x
+#    zip:
+#      list: unzip -l
+#      decompress: unzip -q -o
+#    tar:
+#      list: tar -tf
+#      decompress : tar -x  -C
   postfix:
     img:  jpg #tif,tiff
     attach: ovr
     compressedFile: rar,zip,tar
-  fastdfsServer: 192.168.50.170:8888
+
   downloadPath: D:\\imagedataset\\tile\\
   # compressedFileName: tile.rar
 

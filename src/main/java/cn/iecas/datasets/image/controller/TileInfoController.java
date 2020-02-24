@@ -2,20 +2,19 @@ package cn.iecas.datasets.image.controller;
 
 import cn.iecas.datasets.image.annotation.Log;
 import cn.iecas.datasets.image.pojo.dto.*;
+import cn.iecas.datasets.image.pojo.dto.request.TileTransferParamsDTO;
+import cn.iecas.datasets.image.pojo.dto.response.TileTransferStatusDTO;
 import cn.iecas.datasets.image.pojo.entity.Tile;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.MultipartFileParam;
-import cn.iecas.datasets.image.pojo.entity.uploadFile.ResultVo;
-import cn.iecas.datasets.image.service.StorageService;
+import cn.iecas.datasets.image.service.TransferService;
 import cn.iecas.datasets.image.service.TileInfosService;
-import cn.iecas.datasets.image.utils.FileMD5Util;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotEmpty;
-import java.io.IOException;
 
 @RestController
 @Slf4j
@@ -28,14 +27,14 @@ public class TileInfoController {
     @Autowired
     TileInfosService tileInfosService;
     @Autowired
-    StorageService storageService;
+    TransferService transferService;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
 
     @Log("根据切片主键批量删除")
     @DeleteMapping("/{tileIds}")
     @CrossOrigin
-    public CommonResponseDTO deleteImages(@NotEmpty @PathVariable Integer[] tileIds) throws Exception {
+    public CommonResponseDTO deleteImages(@NotEmpty @PathVariable int[] tileIds) throws Exception {
         tileInfosService.deleteImages(tileIds);
         return new CommonResponseDTO().success().message("删除成功!");
     }
@@ -45,50 +44,49 @@ public class TileInfoController {
     @CrossOrigin
     public CommonResponseDTO listImagesByDatasetId(TileRequestDTO tileRequestDTO) throws Exception {
         TileSetDTO tileSetDTO = tileInfosService.listTilesByDataSetId(tileRequestDTO);
-        if (tileSetDTO != null){
-            return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
-        }else {
-            throw new Exception("该数据集无切片");
-        }
+
+        if (null == tileSetDTO)
+            return new CommonResponseDTO().success().message("该数据集无切片");
+        return new CommonResponseDTO().success().data(tileSetDTO).message("查询影像数据成功");
+
     }
 
     @Log("查询指定影像")
     @CrossOrigin
     @GetMapping(value = "/{tileId}/{type}")
-    public CommonResponseDTO<Tile> getImageByName(@PathVariable String tileId, @PathVariable String type ) throws Exception {
-        Tile tile = tileInfosService.getTileByName(tileId, type);
-        if (tile != null){
-            return new CommonResponseDTO<Tile>().success().data(tile).message("查询影像数据成功");
-        }else {
+    public CommonResponseDTO<Tile> getImageByName(@PathVariable int tileId, @PathVariable String type ) throws Exception {
+        Tile tile = tileInfosService.getTileByType(tileId, type);
+
+        if (null == tile)
             return new CommonResponseDTO<Tile>().message("暂无该类型切片");
-        }
+        return new CommonResponseDTO<Tile>().success().data(tile).message("查询影像数据成功");
     }
 
-    @Log("批量增加切片数据，并且更新对应数据集")
-    @PostMapping(value = "/upload")
     @CrossOrigin
-    public CommonResponseDTO uploadTiles(MultipartFileParam param) throws Exception {
-        String uploadResult = storageService.uploadTiles(param, request);
-        if ("success".equals(uploadResult)){
-            return new CommonResponseDTO().success().message("成功上传");
-        } else {
-            return new CommonResponseDTO().success().message(uploadResult);
-        }
+    @PostMapping(value = "/upload")
+    @Log("分块断点上传切片压缩包")
+    public CommonResponseDTO uploadTiles(TileTransferParamsDTO tileTransferParamsDTO) throws Exception {
+        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+        if (!isMultipart)
+            return new CommonResponseDTO().fail().message("请选择上传文件");
+
+        tileInfosService.uploadTiles(tileTransferParamsDTO);
+        return new CommonResponseDTO().success().message("上传分块结束");
     }
 
     @Log("下载切片压缩包")
     @GetMapping(value = "/downloadTile/{imagesetid}")
     @CrossOrigin
     public void downloadTile(@NotEmpty @PathVariable int imagesetid) throws Exception {
-        storageService.download(imagesetid);
+        transferService.download(imagesetid);
     }
 
+    @CrossOrigin
     @Log("秒传判断，断点判断")
     @GetMapping(value = "checkFileMd5")
-    @CrossOrigin
-    public CommonResponseDTO checkFileMd5(String md5) {
-        ResultVo resultVo = FileMD5Util.checkFileMd5(md5);
-        return new CommonResponseDTO().success().data(resultVo).message(resultVo.getMsg());
+    public CommonResponseDTO checkFileMd5(int imageDatasetId, String md5) throws Exception {
+        TileTransferStatusDTO tileTransferStatusDTO = transferService.checkFileMd5(imageDatasetId,md5);
+        return new CommonResponseDTO().success().data(tileTransferStatusDTO).message("检查md5结束");
     }
 
 
@@ -125,4 +123,5 @@ public class TileInfoController {
             return new CommonResponseDTO().success().data(tileInfoAllStatisticResponseDTO).message("统计全部切片信息成功");
         }
     }
+
 }

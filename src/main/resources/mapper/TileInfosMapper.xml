@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.iecas.datasets.image.dao.TileInfosMapper">
-    <select id="getIdByPath" parameterType="list" resultType="TileInfosDO">
+    <select id="getIdByPath" parameterType="list" resultType="cn.iecas.datasets.image.pojo.domain.TileInfosDO">
         select id,dataPath,createTime from tile_infos
         <where>
             storagePath in
@@ -11,6 +11,13 @@
             </foreach>
         </where>
     </select>
+
+    <insert id="batchInsert">
+        insert into tile_infos (storagePath, labelPath, visualPath, imagesetid, createTime) values
+        <foreach collection ="tileInfosDOList" item="tileInfoDO" separator =",">
+            (#{tileInfoDO.storagePath}, #{tileInfoDO.labelPath}, #{tileInfoDO.visualPath}, #{tileInfoDO.imagesetid}, #{tileInfoDO.createTime})
+        </foreach>
+    </insert>
 
     <select id="getCreateTimeByPath" parameterType="String" resultType="java.util.Date">
         select createTime
@@ -68,11 +75,6 @@
         delete from tile_infos
         where imagesetid=#{imagesetid}
     </delete>
-    <insert id="insertTilesInfo" parameterType="cn.iecas.datasets.image.pojo.domain.TileInfosDO">
-        insert into tile_infos(taskid,dataPath,labelPath,visualPath,resolution,sensor,band,imagesetid,targetNum,createTime,storagePath)
-        values
-        (#{taskid},#{dataPath},#{labelPath},#{visualPath},#{resolution},#{sensor},#{band},#{imagesetid},#{targetNum},#{createTime},#{storagePath})
-    </insert>
 
     <select id="getStatistic" resultType="cn.iecas.datasets.image.pojo.entity.TileInfoStatistic" >
        SELECT DATE_FORMAT(createTime,#{timeStep}) as step,  COUNT(*) as count FROM tile_infos where createTime BETWEEN #{beginTime} AND #{endTime} GROUP BY step order by step

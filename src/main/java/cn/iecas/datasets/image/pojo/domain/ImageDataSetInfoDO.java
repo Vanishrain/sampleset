@@ -1,6 +1,6 @@
 package cn.iecas.datasets.image.pojo.domain;
 
-import cn.iecas.datasets.image.common.DateUtil;
+import cn.iecas.datasets.image.utils.DateUtil;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -42,6 +42,9 @@ public class ImageDataSetInfoDO {
     @TableField(value = "targetnum")
     private long targetNum;
     private long number;
+
+    private int version;
+
 
 
     public void setDatatime(String time)  {

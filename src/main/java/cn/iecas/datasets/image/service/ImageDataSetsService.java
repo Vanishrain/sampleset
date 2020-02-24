@@ -24,19 +24,11 @@ public interface ImageDataSetsService {
     void updateImageDataSetInfoById(ImageDataSetInfoDO imageDataSetInfoDO);
 
     /**
-     * 根据切片名称获取数据
-     * @param imageDataSetId
-     * @param imageName
+     * 根据样本集id获取样本集信息
+     * @param imageDatasetId
      * @return
      */
-    Tile getImageByName(int imageDataSetId, String imageName, String type);
-
-    /**
-     * 根据影像数据集id获取分页影像
-     * @param tileRequestDTO 获取影像请求参数
-     * @return 影像数据信息
-     */
-    TileSetDTO listImagesByDataSetId(TileRequestDTO tileRequestDTO);
+    ImageDataSetInfoDO getImageDatasetInfoById(int imageDatasetId);
 
     /**
      * 获取影像数据集详细信息
@@ -62,5 +54,5 @@ public interface ImageDataSetsService {
      * 删除image_info中的数据集信息，同时删除tile_info表中对应数据集id的切片数据
      * @param datasetIds
      */
-    void deleteImageDataSetByIds(List<String> datasetIds) throws Exception;
+    void deleteImageDataSetByIds(int[] datasetIds) throws Exception;
 }

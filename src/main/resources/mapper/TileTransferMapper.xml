@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iecas.datasets.image.dao.TileTransferMapper">
+    <select id="getByDatasetIdAndMD5" resultType="cn.iecas.datasets.image.pojo.domain.TileTransferInfoDO">
+        select
+        t.id,
+        t.md5,
+        t.chunk,
+        t.chunks,
+        t.version,
+        t.file_name as fileName,
+        t.status as transferStatus,
+        t.create_time as createTime,
+        t.dataset_id as imageDatasetId
+        from tile_upload_info t where t.dataset_id=#{datasetId} and t.md5=#{md5}
+    </select>
+
+    <update id="addChunkCount">
+        update tile_upload_info t set t.chunk = t.chunk + #{count} , t.chunks = #{chunks} where t.dataset_id = #{imageDatasetId} and t.md5 = #{md5}
+    </update>
+
+</mapper>

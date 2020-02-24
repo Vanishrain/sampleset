@@ -23,7 +23,7 @@ import java.util.List;
 
 @Component
 public class FDFSSourceImpl implements BaseDataSource {
-    @Value("${value.fastdfsServer}")
+    @Value("${value.fastdfs.server}")
     private String fastdfsServer;   //FastDFS服务路径
     @Autowired
     public TileInfosMapper tileInfosMapper;
@@ -191,7 +191,7 @@ public class FDFSSourceImpl implements BaseDataSource {
                     Tile tile = new Tile();
                     tile.setBase64Tile(imageBase64String);
                     tile.setId(tileInfosDO.getId());
-                    tile.setName(tileInfosDO.getDataPath());
+                    tile.setName(tileInfosDO.getName());
                     tile.setCreateTime(tileInfosDO.getCreateTime());
                     tileList.add(tile);
                 }else {

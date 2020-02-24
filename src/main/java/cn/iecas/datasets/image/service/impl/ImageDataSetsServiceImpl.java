@@ -27,19 +27,16 @@ import java.util.List;
 @Service
 @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
 public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, ImageDataSetInfoDO> implements ImageDataSetsService {
-
-    @Value("${datasource.file.rootPath}")
-    private String rootPath;
-
-    @Autowired
-    TileInfosMapper tileInfosMapper;
-
     @Autowired
     BaseDataSource baseDataSource;
 
     @Autowired
     TileInfosService tileInfosService;
 
+    /**
+     * 获取样本集的统计信息
+     * @return
+     */
     @Override
     public ImageDataSetStatisticDTO getStatistic() {
         long totalTargetNum = 0;
@@ -53,44 +50,13 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
         return imageDataSetStatisticDTO;
     }
 
+    /**
+     * 根据id更新样本集信息
+     * @param imageDataSetInfoDO
+     */
     @Override
     public void updateImageDataSetInfoById(ImageDataSetInfoDO imageDataSetInfoDO) {
         this.baseMapper.updateById(imageDataSetInfoDO);
-    }
-
-    @Override
-    public Tile getImageByName(int imageDataSetId, String imageName, String type) {
-        return baseDataSource.getImageByName(imageName);
-    }
-
-    /**
-     * 根据数据集id获取相应的切片数据
-     * @param tileRequestDTO 获取影像请求参数
-     * @return
-     */
-    @Override
-    public TileSetDTO listImagesByDataSetId(TileRequestDTO tileRequestDTO) {
-        int imageDatasetId = tileRequestDTO.getImageDatasetId();
-        ImageDataSetInfoDO imageDataSetInfoDO = getImageDatasetInfoById(imageDatasetId);
-
-        if (imageDataSetInfoDO == null){
-            log.info("影像数据集id：{} 不存在",imageDatasetId);
-            return new TileSetDTO();
-        }
-
-        IPage<TileInfosDO> iPageImageList = tileInfosMapper.listTilesByDataSetId(new Page(tileRequestDTO.getPageNo(), tileRequestDTO.getPageSize()), tileRequestDTO);
-        List<TileInfosDO> imagePathList = iPageImageList.getRecords();
-
-        TileSetDTO tileSetDTO = new TileSetDTO();
-        try {
-            List<Tile> tileList = baseDataSource.getImages(imagePathList);
-            tileSetDTO.setTotalCount((int)iPageImageList.getTotal());
-            tileSetDTO.setTileList(tileList);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return tileSetDTO;
     }
 
 
@@ -115,6 +81,11 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
         return imageDataSetInfoDTO;
     }
 
+    /**
+     * 根据样本集id获取样本集信息
+     * @param imageDatasetId
+     * @return
+     */
     public ImageDataSetInfoDO getImageDatasetInfoById(int imageDatasetId){
         return this.baseMapper.selectById(imageDatasetId);
     }
@@ -125,10 +96,9 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      * @param datasetIds
      */
     @Override
-    public  void  deleteImageDataSetByIds(List<String> datasetIds) throws Exception {
-        for(String temp:datasetIds) {
-            deleteImageDataSetById(Integer.valueOf(temp));
-        }
+    public void deleteImageDataSetByIds(int[] datasetIds) throws Exception {
+        for(int datasetId:datasetIds)
+            deleteImageDataSetById(datasetId);
     }
 
 
@@ -138,16 +108,10 @@ public class ImageDataSetsServiceImpl extends ServiceImpl<ImageDatasetMapper, Im
      */
     @Override
     public void deleteImageDataSetById(int imageDataSetId) throws Exception {
-        int flag = this.baseMapper.deleteById(imageDataSetId);
-        if(flag!=0){
-            String deleteTileResult = tileInfosService.deleteByImageDatasetId(imageDataSetId);
-            if ("success".equals(deleteTileResult)){
-                tileInfosMapper.deleteByImagesetid(imageDataSetId);
-                log.info("成功删除数据集:{}和数据集下的切片信息",imageDataSetId);
-            }
-        }else{
-            log.info("id：{} 数据集不存在", imageDataSetId);
-        }
+        log.info("删除id为：{}的样本集",imageDataSetId);
+        this.baseMapper.deleteById(imageDataSetId);
+        tileInfosService.deleteByImageDatasetId(imageDataSetId);
+        log.info("删除样本集{}成功",imageDataSetId);
     }
 
     /**

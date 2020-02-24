@@ -9,14 +9,11 @@ import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoDTO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetInfoRequestDTO;
 import cn.iecas.datasets.image.pojo.dto.ImageDataSetStatisticDTO;
 import cn.iecas.datasets.image.service.ImageDataSetsService;
-import cn.iecas.datasets.image.service.StorageService;
+import cn.iecas.datasets.image.service.TransferService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author vanishrain
@@ -26,7 +23,7 @@ import java.util.List;
 @RequestMapping("/image")
 public class ImageDatasetsController extends BaseController {
     @Autowired
-    StorageService storageService;
+    TransferService transferService;
 
     @Autowired
     StringRedisTemplate stringRedisTemplate;
@@ -49,9 +46,8 @@ public class ImageDatasetsController extends BaseController {
     @Log("删除指定id的影像数据集")
     @DeleteMapping(value = "/{idList}")
     @CrossOrigin
-    public CommonResponseDTO deleteImageDataSetById(@PathVariable String idList) throws Exception {
-        List<String> dataSetIdList= Arrays.asList(idList.split(","));
-        imageDatasetsService.deleteImageDataSetByIds(dataSetIdList);
+    public CommonResponseDTO deleteImageDataSetById(@PathVariable int[] idList) throws Exception {
+        imageDatasetsService.deleteImageDataSetByIds(idList);
         return new CommonResponseDTO().success().message("成功删除影像数据信息还有对应的切片信息");
     }
 

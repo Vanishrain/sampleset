@@ -1,77 +1,188 @@
 package cn.iecas.datasets.image.utils;
 
+import cn.iecas.datasets.image.common.constant.CompressCmd;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * 解压缩工具类
  */
+@Slf4j
 public class CompressUtil {
-    private static Logger logger = LoggerFactory.getLogger(CompressUtil.class);
+    private final static byte[] RAR_HEADER = {82,97,114,33}; //RAR格式的二进制头
+
+    private final static byte[] ZIP_HEADER = {80,75,3,4}; //
+
+    private final static byte[] ZIP_OLD_HEADER = {80,75,3,4};
+
+    private final static byte[] TAR_HEADER = {117,115,116,97,114};
+
+    /**
+     * 判断文件的压缩格式
+     * @param filePath
+     * @return
+     */
+    private static String getCompressFileType(String filePath){
+        byte[] fileHeader = new byte[4];
+        byte[] tarFileHeader = new byte[5];
+        RandomAccessFile randomAccessFile = null;
+        try{
+            randomAccessFile = new RandomAccessFile(filePath,"r");
+            randomAccessFile.read(fileHeader);
+            randomAccessFile.seek(256);
+            randomAccessFile.read(tarFileHeader);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                assert randomAccessFile != null;
+                randomAccessFile.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        if (Arrays.equals(fileHeader,RAR_HEADER))
+            return CompressCmd.RAR_POSTFIX;
+
+        if (Arrays.equals(fileHeader,ZIP_HEADER) || Arrays.equals(fileHeader, ZIP_OLD_HEADER))
+            return CompressCmd.ZIP_POSTFIX;
+
+        if (Arrays.equals(tarFileHeader,TAR_HEADER))
+            return CompressCmd.TAR_POSTFIX;
+
+        return null;
+    }
+
+    /**
+     * 根据文件类型获取列表命令
+     * @param fileType
+     * @return
+     */
+    private static String getListCmd(String fileType){
+        String listCmd = null;
+        switch (fileType) {
+            case CompressCmd.RAR_POSTFIX:
+                listCmd = CompressCmd.RAR_LIST_CMD;
+                break;
+            case CompressCmd.TAR_POSTFIX:
+                listCmd = CompressCmd.TAR_LIST_CMD;
+                break;
+            default:
+                listCmd = CompressCmd.ZIP_LIST_CMD;
+        }
+
+        return listCmd;
+    }
+
+    /**
+     * 根据文件类型获取相应的解压缩命令
+     * @param fileType
+     * @return
+     */
+    private static String getDecompressCmd(String fileType, String srcPath, String desPath){
+        String decompressCmd = null;
+        switch (fileType) {
+            case CompressCmd.RAR_POSTFIX:
+                decompressCmd = String.format("%s %s %s",CompressCmd.RAR_DECOMPRESS_CMD, srcPath, desPath);
+                break;
+            case CompressCmd.TAR_POSTFIX:
+                decompressCmd = String.format("%s %s %s",CompressCmd.TAR_DECOMPRESS_CMD, srcPath, desPath);
+                break;
+            default:
+                decompressCmd = String.format("%s %s -d %s",CompressCmd.ZIP_DECOMPRESS_CMD, srcPath, desPath);
+        }
+
+        return decompressCmd;
+    }
+
+
+    /**
+     * 压缩为zip格式
+     * @param srcPath
+     * @param desPath
+     */
+    public static void compress(String srcPath, String desPath){
+        File srcFile = new File(srcPath);
+        String compressCmd = String.format("zip %s -r %s", desPath,srcFile.getName());
+        try {
+            Process process = Runtime.getRuntime().exec(compressCmd,null,srcFile.getParentFile()); //执行解压命令
+            new RunThread(process.getInputStream(), "INFO").start();
+            new RunThread(process.getErrorStream(), "ERROR").start();
+
+            log.info("正在压缩文件:{}", srcPath);
+            process.waitFor();  //等待压缩结束
+            log.info("文件:{} 压缩完成", srcPath);
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            log.info("压缩文件:{} 失败", srcFile.getName());
+        }
+    }
+
+
+    /**
+     * 从压缩包中删除文件
+     * @param srcPath
+     * @param fileName
+     */
+    public static void delete(String srcPath, String fileName){
+        String cmd = String.format("zip %s -d %s",srcPath,fileName);
+
+        try {
+            Process process = Runtime.getRuntime().exec(cmd); //执行解压命令
+            new RunThread(process.getInputStream(), "INFO").start();
+            new RunThread(process.getErrorStream(), "ERROR").start();
+
+            log.info("正在从压缩包{} 删除文件:{}",srcPath,fileName);
+            process.waitFor();  //等待解压结束
+            log.info("从压缩包{} 删除文件:{}成功",srcPath,fileName);
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            log.info("从压缩包{} 删除文件:{}失败",srcPath,fileName);
+        }
+    }
+
 
     /*
     * 解压
     * */
-    public static List<String> decompress(String srcPath,   //待解压文件路径
-                                          String destPath,   //解压目标路径
-                                          String decompressCmdPrefix,   //解压命令前缀？
-                                          String decompressCmdListPrefix,   //解压命令列表前缀？
-                                          List<String> filePostfix) //文件后缀？
+    public static String decompress(String srcPath,   //待解压文件路径
+                                          String destPath) throws Exception //文件后缀？
     {
-        File srcFile = new File(srcPath);   //压缩包
+        File srcFile = new File(srcPath);//压缩包
+        String fileType = getCompressFileType(srcPath);
+        if (null == fileType)
+            throw new Exception("文件：" + srcFile.getName() + " 不是压缩格式");
 
-        //获取查询压缩文件内容的命令
-        String decompressCmdList = getDecompressCmdList(srcPath, decompressCmdListPrefix);
+        if (null == destPath)
+            destPath = srcFile.getParentFile().getAbsolutePath();
 
-        //获取压缩文件内的内容,并且返回需要解压的 tif 和 tiff 类型的文件名
-        List<String> resultList = getFileNameList(srcPath, decompressCmdList, filePostfix);
-        String decompressCmd = getDecompressCmd(srcPath, destPath, decompressCmdPrefix);
+        String decompressCmd = getDecompressCmd(fileType,srcPath,destPath);
 
         try {
             Process process = Runtime.getRuntime().exec(decompressCmd); //执行解压命令
             new RunThread(process.getInputStream(), "INFO").start();
             new RunThread(process.getErrorStream(), "ERROR").start();
 
-            logger.info("正在解压缩文件:{}", srcPath);
+            log.info("正在解压缩文件:{}", srcPath);
             process.waitFor();  //等待解压结束
-            logger.info("文件:{} 解压缩完成", srcPath);
+            log.info("文件:{} 解压缩完成", srcPath);
 
-//            process = Runtime.getRuntime().exec(decompressCmdList);
-//            process.waitFor();
-//            InputStream in = process.getInputStream();
-//            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
-//            String resultLine = null;
-//            logger.info("正在获取文件:{} 列表",srcPath);
-//            while(true){
-//                resultLine = bufferedReader.readLine();
-//                if (resultLine==null)
-//                    break;
-//                if (FilenameUtils.isExtension(resultLine,filePostfix)) {
-//                    resultList.add(resultLine);
-//                }
-//            }
-//            System.out.println(resultList.toString());
-//            logger.info("文件:{} 列表获取完毕",srcPath);
-
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-            logger.info("解压缩文件:{} 失败", srcFile.getName());
-
-            return resultList;
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            logger.info("解压缩文件:{} 失败", srcFile.getName());
-
-            return resultList;
+            log.info("解压缩文件:{} 失败", srcFile.getName());
         }
-
-        return resultList;
+        return destPath;
     }
 
     /**
@@ -85,95 +196,51 @@ public class CompressUtil {
 
         return  decompressCmdList;
     }
+
     /**
-     * 获取压缩文件内的内容,并且返回需要解压的tif和tiff类型的文件名
-     * @param decompressCmdList
-     * @param filePostfix
+     * 获取压缩文件内某一文件夹的内容,并且返回需要解压的文件名
+     * @param srcPath
      * @return
      */
-    public  static  List<String>  getFileNameList(String srcPath,
-                                                  String decompressCmdList,
-                                                  List<String> filePostfix){
+    public static List<String> getZipFileNameList(String srcPath, String dir){
+        String listCmd = CompressCmd.ZIP_LIST_CMD;
+        if (null != dir){
+            String dirPath = String.format("%s %s%s*.* | awk {print $4}",srcPath,dir,File.separator);
+            listCmd += " " + dirPath;
+        }
+
+
         List<String> resultList = new ArrayList<>();
 
         try {
-            logger.info("正在获取文件:{} 列表", srcPath);
-
-            Process process = Runtime.getRuntime().exec(decompressCmdList);
-//            new RunThread(process.getInputStream(), "INFO").start();
-//            new RunThread(process.getErrorStream(), "ERROR").start();
-
-//            process.waitFor();
+            log.info("正在获取文件:{} 列表", srcPath);
+            Process process = Runtime.getRuntime().exec(listCmd);
             InputStream in = process.getInputStream();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
             String resultLine = null;
 
             while (true) {
                 resultLine = bufferedReader.readLine();
-
-                if (resultLine == null)
+                if (null == resultLine)
                     break;
-                if (FilenameUtils.isExtension(resultLine, filePostfix)) {
-                    if(FilenameUtils.isExtension(srcPath,"zip")){
-                        resultLine=resultLine.substring(resultLine.lastIndexOf(" ")+1);
-                    }
 
+                if (resultLine.contains(dir+"/")){
+                    resultLine = resultLine.trim().split(" ")[6].substring(dir.length()+1);
                     resultList.add(resultLine);
                 }
+
             }
 
-            logger.info("文件:{} 列表获取完毕", srcPath);
+            log.info("文件:{} 中文件夹{} 列表获取完毕", srcPath,dir);
         }catch (IOException e) {
             e.printStackTrace();
-            logger.info("文件：{}列表获取失败，命令执行出错", srcPath);
+            log.info("文件：{}中文件夹{} 列表获取失败，命令执行出错", srcPath,dir);
         }
-        /*catch (InterruptedException e){
-            e.printStackTrace();
-            logger.info("文件列表：{}获取失败，遇到异常中断",srcPath);
-        }*/
-
         return  resultList;
     }
 
-    /*
-    * 根据压缩包类型返回要执行的解压命令
-    * */
-    public static String getDecompressCmd(String srcPath,
-                                          String destPath,
-                                          String decompressCmdPrefix){
-        String decomporessCmd;
 
-        if(FilenameUtils.isExtension(srcPath,"rar") ) {
-            decomporessCmd = String.format("%s %s %s", decompressCmdPrefix, srcPath, destPath);
-
-            return  decomporessCmd;
-        }
-        if (FilenameUtils.isExtension(srcPath,"zip")) {
-            decomporessCmd = String.format("%s  %s   -d %s",decompressCmdPrefix, srcPath, destPath);
-            return  decomporessCmd;
-        }
-        if(FilenameUtils.isExtension(srcPath,"tar") ){
-            decomporessCmd = String.format("%s  %s  %s",decompressCmdPrefix , destPath, srcPath);
-            return  decomporessCmd;
-        }
-
-        return  null;
-    }
-
-    /**
-     * 根据后缀名判断是否为压缩文件
-     *
-     * @param fileName
-     * @return
-     */
-    public static boolean isCompressedFile(String fileName) {
-        if (fileName.endsWith(".rar") || fileName.endsWith(".zip"))
-            return true;
-
-        return false;
-    }
 }
-
 
 class RunThread extends Thread{
     InputStream is;

@@ -8,16 +8,18 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Property;
 import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 public interface TileInfosMapper extends BaseMapper<TileInfosDO> {
+    void batchInsert(@Param("tileInfosDOList") List<TileInfosDO> tileInfosDOList);
     List<TileInfosDO> getIdByPath(@Param("imagePathList") List<String> imagePathList);
     void deleteByImagesetid(Integer imagesetid);
-    void insertTilesInfo(TileInfosDO tileInfoDO);
     String getVisualPath(int tileId);
     String getStoragePath(String visualPath);
     int getImageDataSetId(Integer tileIds);

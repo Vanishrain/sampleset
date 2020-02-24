@@ -1,91 +1,146 @@
 package cn.iecas.datasets.image.service.impl;
 
-import cn.iecas.datasets.image.dao.ImageDatasetMapper;
+import cn.iecas.datasets.image.common.constant.TileType;
 import cn.iecas.datasets.image.dao.TileInfosMapper;
 import cn.iecas.datasets.image.datasource.BaseDataSource;
 import cn.iecas.datasets.image.pojo.domain.ImageDataSetInfoDO;
 import cn.iecas.datasets.image.pojo.domain.TileInfosDO;
 import cn.iecas.datasets.image.pojo.dto.*;
+import cn.iecas.datasets.image.pojo.dto.request.TileTransferParamsDTO;
 import cn.iecas.datasets.image.pojo.entity.DatasetTileInfoStatistic;
 import cn.iecas.datasets.image.pojo.entity.Tile;
 import cn.iecas.datasets.image.pojo.entity.TileInfoStatistic;
+import cn.iecas.datasets.image.pojo.domain.TileTransferInfoDO;
+import cn.iecas.datasets.image.pojo.entity.uploadFile.TransferStatus;
+import cn.iecas.datasets.image.service.ImageDataSetsService;
+import cn.iecas.datasets.image.service.TransferService;
 import cn.iecas.datasets.image.service.TileInfosService;
+import cn.iecas.datasets.image.utils.CompressUtil;
 import cn.iecas.datasets.image.utils.FastDFSUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 
 @Slf4j
 @Service
 @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
 public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfosDO> implements TileInfosService {
-    @Value("${value.fastdfsServer}")
-    private String fastdfsServer;   //FastDFS服务路径
 
-    @Autowired
-    ImageDatasetMapper imageDatasetMapper;
-    @Autowired
-    TileInfosMapper tileInfosMapper;
+
+    @Value("${value.dir.monitorDir}")
+    private Path rootPath;  // 本地暂时保
+
+    @Value("${value.dir.downloadDir}")
+    private String downloadPath;    //下载路径
+
     @Autowired
     BaseDataSource baseDataSource;
 
+    @Autowired
+    TransferService transferService;
+
+    @Autowired
+    TileInfosMapper tileInfosMapper;
+
+    @Autowired
+    ImageDataSetsService imageDataSetsService;
+
+    private static final int BATH_INSERT_THRESHOLD = 200;
+
+
     @Override
-    public String deleteByImageDatasetId(int imagesetid) throws Exception {
+    public void deleteByImageDatasetId(int imagesetid) throws Exception {
+        this.baseMapper.deleteByImagesetid(imagesetid);
         List<TileInfosDO> tileInfosDOS = tileInfosMapper.getAllTileById(imagesetid);
-        if (tileInfosDOS.size() == 0){
-            return "success";
+        if (tileInfosDOS.size() != 0){
+            for (TileInfosDO tileInfosDO : tileInfosDOS){ //得到所有切片id
+                baseDataSource.deletes(tileInfosDO.getId());
+                deleteTileFromDownloadFile(tileInfosDO);
+            }
         }
-        List<Integer> tileIds = new ArrayList<>();
-        for (TileInfosDO tileInfosDO : tileInfosDOS){//得到所有切片id
-            tileIds.add(tileInfosDO.getId());
-        }
-
-        for (int tileId : tileIds){
-            baseDataSource.deletes(tileId);//删除切片数据
-        }
-
-        return "success";
     }
 
     /*
     * 根据切片id批量删除
     * */
+    /**TODO
+     * 跟前端确认是否每次删除所有的tile都来自同一个数据集
+     */
     @Override
-    public void deleteImages(Integer[] tileIds) throws Exception {
-        ImageDataSetInfoDO imageDataSetInfoDO;
+    public void deleteImages(int[] tileIds) throws Exception {
         for (int tileId : tileIds){
             baseDataSource.deletes(tileId);//删除切片数据
-            int imageDataSetId = tileInfosMapper.getImageDataSetId(tileId); //根据切片id得到数据集id
+            TileInfosDO tileInfosDO = this.baseMapper.selectById(tileId);
+            int imageDataSetId = tileInfosDO.getId(); //根据切片id得到数据集id
             tileInfosMapper.deleteById(tileId);//删除切片库中信息
+            deleteTileFromDownloadFile(tileInfosDO);//删除压缩包中的数据
 
-            imageDataSetInfoDO = imageDatasetMapper.getImageDataSetById(imageDataSetId);
+            ImageDataSetInfoDO imageDataSetInfoDO = imageDataSetsService.getImageDatasetInfoById(imageDataSetId);
             imageDataSetInfoDO.setNumber(imageDataSetInfoDO.getNumber()-1);
-            imageDatasetMapper.updateNumber(imageDataSetInfoDO);
+            imageDataSetsService.updateImageDataSetInfoById(imageDataSetInfoDO);
         }
     }
 
+    /**
+     * 查找为压缩包中没有的tile的信息
+     * @param nameList
+     * @return
+     */
     @Override
-    public void insertTileInfo(TileInfosDO tileInfoDO) {
-        this.baseMapper.insertTilesInfo(tileInfoDO);
-        if (tileInfoDO.getImagesetid() != null) {
-            imageDatasetMapper.updateImageDataset(1, tileInfoDO.getImagesetid(), "number");
-            if (tileInfoDO.getTargetNum() != null) {
-                imageDatasetMapper.updateImageDataset(tileInfoDO.getTargetNum(), tileInfoDO.getImagesetid(), "targetNum");
-            }
+    public List<TileInfosDO> getTileInfoNotInNameList(List<String> nameList) {
+        QueryWrapper<TileInfosDO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.notIn("name",nameList);
+        return this.baseMapper.selectList(queryWrapper);
+    }
+
+    /**
+     * 分块上传tile压缩包，并进行解压和存储
+     * @param tileTransferParamsDTO
+     */
+    @Override
+    public void uploadTiles(TileTransferParamsDTO tileTransferParamsDTO) throws Exception {
+        boolean isComplete = true;
+        String md5 = tileTransferParamsDTO.getMd5();
+        String fileName = tileTransferParamsDTO.getName();
+        int imageDatasetId = tileTransferParamsDTO.getImagesetid();
+        String uploadFilePath = rootPath + File.separator + md5 + File.separator + fileName;
+        ImageDataSetInfoDO imageDataSetInfo = imageDataSetsService.getImageDatasetInfoById(imageDatasetId);
+        TileTransferInfoDO tileTransferInfoDO = transferService.getTileTransferInfoByImageDatasetIdAndMD5(imageDatasetId,md5);
+
+        if (null == imageDataSetInfo)
+            throw new Exception("数据集id: " + imageDatasetId + " 不存在");
+        if (null == transferService.getTileTransferInfoByImageDatasetIdAndMD5(imageDatasetId,md5))
+            throw new Exception("请先对文件：" + tileTransferParamsDTO.getName() + "进行md5检查");
+        if ((tileTransferInfoDO.getChunks() != tileTransferInfoDO.getChunk())
+            || (tileTransferInfoDO.getChunks()==0)){
+            uploadFilePath = transferService.transferTiles(tileTransferParamsDTO,uploadFilePath);
+            isComplete = transferService.checkAndSetUploadProgress(tileTransferParamsDTO, uploadFilePath);
         }
-        log.info("成功插入切片数据imagesetid:{}", tileInfoDO.getImagesetid());
+
+        if (isComplete && (TransferStatus.TRANSFERING == tileTransferInfoDO.getTransferStatus())){
+            String desPath = CompressUtil.decompress(uploadFilePath,null);
+            storageTileDir(imageDatasetId, desPath);
+            combineToDownloadFile(imageDatasetId,desPath);
+            transferService.setTransferStatus(imageDatasetId, md5 , TransferStatus.FINISHED);
+            transferService.deleteFile(md5);
+        }
+
     }
 
     @Override
-    public TileSetDTO listTilesByDataSetId(TileRequestDTO tileRequestDTO) throws Exception {
+    public TileSetDTO listTilesByDataSetId(TileRequestDTO tileRequestDTO) {
         TileSetDTO tileSetDTO = new TileSetDTO();
         List<Tile> tileList = new ArrayList<>();
 
@@ -128,27 +183,30 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
      * @return
      */
     @Override
-    public Tile getTileByName(String tileId, String type) throws Exception {
+    public Tile getTileByType(int tileId, String type) throws Exception {
         Tile tile = new Tile();
-        TileInfosDO tileInfosDO = tileInfosMapper.getTileByName(Integer.valueOf(tileId));
-        if (tileInfosDO != null){
-            tile.setName(tileInfosDO.getDataPath());
-            tile.setId(tileInfosDO.getId());
-            tile.setCreateTime(tileInfosDO.getCreateTime());
-            if ("imgs".equals(type)) {
-                tile.setBase64Tile(baseDataSource.getImageByPath(tileInfosDO.getStoragePath()));
-                return tile;
-            } else if ("visuals".equals(type)) {
-                tile.setBase64Tile(baseDataSource.getImageByPath(tileInfosDO.getVisualPath()));
-                return tile;
-            } else if ("xmls".equals(type)) {
-                tile.setBase64Tile(baseDataSource.getImageByPath(tileInfosDO.getLabelPath()));
-                return tile;
-            }else {
-                throw new Exception("该切片不存在");
-            }
+        TileInfosDO tileInfosDO = tileInfosMapper.getTileByName(tileId);
+        if (null == tileInfosDO)
+            return tile;
+
+        String imagePath;
+        BeanUtils.copyProperties(tileInfosDO,tile);
+        switch (type){
+            case TileType.TILE_IMG :
+                imagePath = tileInfosDO.getStoragePath();
+                break;
+            case TileType.TILE_VISUAL :
+                imagePath = tileInfosDO.getVisualPath();
+                break;
+            case TileType.TILE_XML :
+                imagePath = tileInfosDO.getLabelPath();
+                break;
+            default:
+                throw new Exception("切片文件类型：" + type + " 不存在");
         }
-        return null;
+
+        tile.setBase64Tile(baseDataSource.getImageByPath(imagePath));
+        return tile;
 }
 
 
@@ -220,5 +278,107 @@ public class TileInfosServiceImpl extends ServiceImpl<TileInfosMapper, TileInfos
         tileInfoStatisticResponseDTO.setContent(contentList);
         tileInfoStatisticResponseDTO.setCount(datasetTileInfoStatisticMap.size());
         return tileInfoStatisticResponseDTO;
+    }
+
+
+    /**
+     * 将本次上传的文件与原有数据进行合并压缩
+     * @param imageDatasetId
+     * @param dirPath
+     */
+    private void combineToDownloadFile(int imageDatasetId, String dirPath){
+        log.info("正在将样本集:{} 的{}数据合并到下载目录，");
+        File desFile = new File(dirPath);
+        String downloadPath = this.downloadPath + File.separator + imageDatasetId;
+        String filePath = downloadPath+File.separator+imageDatasetId+".zip";
+        File downloadDir = new File(downloadPath);
+        if (!downloadDir.exists())
+            downloadDir.mkdirs();
+
+        for (File file : desFile.listFiles()){
+            String fileName = file.getName();
+            if (!file.isDirectory())
+                continue;
+
+            if (fileName.equals(TileType.TILE_IMG) || fileName.equals(TileType.TILE_VISUAL) ||
+                    fileName.equals(TileType.TILE_XML))
+                CompressUtil.compress(file.getAbsolutePath(),filePath);
+        }
+        log.info("数据合并结束");
+    }
+
+    /**
+     * 将上传的样本集文件夹存储到数据库和文件系统中
+     * @param desPath
+     */
+    private void storageTileDir(int imageDatasetId, String desPath){
+        log.info("正在存储样本集:{} 的数据，路径为:{}",imageDatasetId,desPath);
+        int total = 0 ;
+        int count = 0 ;
+        String imgsDirPath = desPath + File.separator + TileType.TILE_IMG;
+        File imgsDirFiles = new File(imgsDirPath);
+        List<TileInfosDO> tileInfosDOList = new ArrayList<>();
+        ImageDataSetInfoDO imageDataSetInfoDO = imageDataSetsService.getImageDatasetInfoById(imageDatasetId);
+        int version = imageDataSetInfoDO.getVersion() + 1;
+        for (File imgFile : imgsDirFiles.listFiles()){
+            TileInfosDO tileInfosDO = new TileInfosDO();
+            File rootFile = imgFile.getParentFile().getParentFile();
+            String fileName = imgFile.getName().substring(0,imgFile.getName().lastIndexOf("."));
+            String vislauFilePath = rootFile.getAbsolutePath() + File.separator + TileType.TILE_VISUAL + File.separator +  imgFile.getName();
+            String xmlFilePath = rootFile.getAbsolutePath() + File.separator + TileType.TILE_XML + File.separator + fileName + ".xml";
+            File visualFile = new File(vislauFilePath);
+            File xmlFile = new File (xmlFilePath);
+
+            tileInfosDO.setStoragePath(FastDFSUtil.upload(imgFile));
+            if (visualFile.exists()){
+                tileInfosDO.setVisualPath(FastDFSUtil.upload(visualFile));
+            }
+
+            if (xmlFile.exists()){
+                tileInfosDO.setLabelPath(FastDFSUtil.upload(xmlFile));
+            }
+
+            tileInfosDO.setName(imgFile.getName());
+            tileInfosDO.setVersion(version);
+            tileInfosDO.setImagesetid(imageDatasetId);
+            tileInfosDO.setCreateTime(new Date());
+
+            tileInfosDOList.add(tileInfosDO);
+            count++;
+            total++;
+
+            if (count >= BATH_INSERT_THRESHOLD){
+                tileInfosMapper.batchInsert(tileInfosDOList);
+                tileInfosDOList.clear();
+                count = 0;
+            }
+        }
+        if (!tileInfosDOList.isEmpty())
+            tileInfosMapper.batchInsert(tileInfosDOList);
+
+        imageDataSetInfoDO.setVersion(imageDataSetInfoDO.getVersion()+1);
+        imageDataSetInfoDO.setNumber(imageDataSetInfoDO.getNumber() + total);
+        imageDataSetsService.updateImageDataSetInfoById(imageDataSetInfoDO);
+        log.info("样本集数据存储结束");
+    }
+
+    /**
+     * 从下载的压缩文件中删除该文件
+     * @param tileInfosDO
+     */
+    private void deleteTileFromDownloadFile(TileInfosDO tileInfosDO){
+        String name = tileInfosDO.getName();
+        int imageDatasetId = tileInfosDO.getImagesetid();
+        String downloadFilePath = this.downloadPath + File.separator + imageDatasetId + File.separator + imageDatasetId + ".zip";
+        File downloadFile = new File(downloadFilePath);
+
+        if (!downloadFile.exists())
+            return;
+        String imgFile = TileType.TILE_IMG + File.separator + name;
+        String visualFile = TileType.TILE_VISUAL + File.separator + name;
+        String xmlFile = TileType.TILE_XML + File.separator + name.substring(0,name.lastIndexOf("."));
+        CompressUtil.delete(downloadFilePath,imgFile);
+        CompressUtil.delete(downloadFilePath,visualFile);
+        CompressUtil.delete(downloadFilePath,xmlFile);
     }
 }

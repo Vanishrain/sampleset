@@ -1,7 +1,7 @@
 package cn.iecas.datasets.image.pojo.domain;
 
 
-import cn.iecas.datasets.image.common.DateUtil;
+import cn.iecas.datasets.image.utils.DateUtil;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -15,18 +15,36 @@ import java.util.Date;
 @TableName(value = "tile_infos")
 public class TileInfosDO {
     @TableId(type = IdType.AUTO,value = "id")
-    Integer id;
-    Integer taskid;
-    String dataPath;
-    String labelPath;
-    String visualPath;
-    Double resolution;
-    String sensor;
-    Integer band;
-    Integer imagesetid;
-    Integer targetNum;
-    Date createTime;
-    String storagePath;
+    private int id;
+
+    private int band;
+
+    private int taskid;
+
+    private int version;
+
+    private String name;
+
+    private int targetNum;
+
+    private int imagesetid;
+
+
+    private Date createTime;
+
+    private String labelPath;
+
+    private String visualPath;
+
+    private Double resolution;
+
+
+    private String storagePath;
+
+    public void setCreateTime(Date time){
+        this.createTime = time;
+    }
+
 
     public void setCreateTime(String time){
         try {
