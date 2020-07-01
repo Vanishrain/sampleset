@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iecas.sampleset.dao.SampleInfoMapper">
+    <select id="getIdByPath" parameterType="list" resultType="cn.iecas.sampleset.pojo.domain.SampleInfo">
+        select id,data_path,create_time from sample_tile_infos
+        <where>
+            storagePath in
+            <foreach collection="imagePathList" item="imagePath" separator="," open="(" close=")">
+                #{imagePath}
+            </foreach>
+        </where>
+    </select>
+
+    <insert id="batchInsert">
+        insert into sample_tile_infos (name, storage_path, label_path, visual_path, imagesetid, create_time,version) values
+        <foreach collection ="sampleInfoList" item="tileInfoDO" separator =",">
+            (#{tileInfoDO.name},#{tileInfoDO.storagePath}, #{tileInfoDO.labelPath}, #{tileInfoDO.visualPath}, #{tileInfoDO.imagesetid}, #{tileInfoDO.createTime},#{tileInfoDO.version})
+        </foreach>
+    </insert>
+
+
+    <select id="getImageDataSetId" parameterType="int" resultType="int">
+        select imagesetid
+        from sample_tile_infos
+        where id = #{tileId}
+    </select>
+
+
+    <select id="listSampleInfos" parameterType="cn.iecas.sampleset.pojo.dto.SampleRequestParams" resultType="cn.iecas.sampleset.pojo.domain.SampleInfo">
+        select * from sample_info
+        <where>
+            sample_set_id = #{sampleRequestParams.sampleSetId}
+            <if test="sampleRequestParams.beginTime!=null">
+                <if test="sampleRequestParams.endTime!=null">
+                    and createTime BETWEEN #{sampleRequestParams.beginTime} AND #{sampleRequestParams.endTime}
+                </if>
+            </if>
+        </where>
+    </select>
+
+
+    <select id="getStatistic" resultType="cn.iecas.sampleset.pojo.entity.TileInfoStatistic" >
+       SELECT to_char(create_time,#{timeStep}) as step,  COUNT(*) as count FROM sample_tile_infos where create_time BETWEEN #{beginTime} AND #{endTime} GROUP BY step order by step
+   </select>
+
+    <select id="getStatisticByDataSets" resultType="cn.iecas.sampleset.pojo.entity.TileInfoStatistic">
+        SELECT to_char(create_time,#{timeStep}) as step, count(*) as count , imagesetid as imageSetId FROM sample_tile_infos
+        <where>
+            <if test="imageSetIdList!=null">
+                imagesetid in
+                <foreach collection="imageSetIdList" item="imageSetId" separator="," open="(" close=")">
+                    #{imageSetId}
+                </foreach>
+            </if>
+            and createTime BETWEEN #{beginTime} AND #{endTime}
+        </where>
+        group by imageSetId,step order by imageSetId ,step
+    </select>
+
+</mapper>

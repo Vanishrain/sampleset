@@ -1,26 +1,17 @@
 server:
   port: 28000
   servlet:
-    context-path: /geoapi/V1/datasets
+    context-path: /geoapi/V1/sampleset-platform
   tomcat:
     max-http-post-size: -1
 
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/geo?useSSL=false&useUnicode=true&characterEncoding=utf8
-    username: root
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://192.168.30.6:31189/sampleset_platform?useSSL=false&useUnicode=true&characterEncoding=utf8
+    username: iecas
     password: 123456
-  redis:
-    host: localhost
-    port: 6379
-    jedis:
-      pool:
-        min-idle: 3
-        max-idle: 10
-        max-active: 30
-        max-wait: 10000
-    timeout: 5000
+
   http:
     multipart:
       max-file-size:  5MB
@@ -46,46 +37,20 @@ mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   configuration:
     jdbc-type-for-null: null
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    map-underscore-to-camel-case: false
   global-config:
     # 关闭 mybatis-plus的 banner
     banner: false
-  type-handlers-package: cn.iecas.datasets.image.common.typeHandler
+  type-handlers-package: cn.iecas.sampleset.common.typeHandler
 
-datasource:
-  file:
-    rootPath: sdfsdf
-
-fastdfs:
-  server: localhost:8888
 
 value:
-  fastdfs:
-    server: localhost:8888
+  datasource: lizardfs
   dir:
-    monitorDir: /Users/vanishrain/Desktop/upload  #本地上传路径
-    downloadDir: /Users/vanishrain/Desktop/upload/download
-    decompressRootDir: /Users/vanishrain/Desktop/upload #/data/fastdfs/data/
-    decompressImgDir: /Users/vanishrain/Desktop/upload  #解压路径
-    #downloadDir: D:\\imagedataset\\tile\\
-#  decompressCmd:
-#    rar:
-#      list: unrar lb
-#      decompress: unrar -o+ x
-#    zip:
-#      list: unzip -l
-#      decompress: unzip -q -o
-#    tar:
-#      list: tar -tf
-#      decompress : tar -x  -C
-  postfix:
-    img:  jpg #tif,tiff
-    attach: ovr
-    compressedFile: rar,zip,tar
-
-  downloadPath: D:\\imagedataset\\tile\\
-  # compressedFileName: tile.rar
+    rootDir: d:\\temp
+    monitorDir: D:\\data\\traindata\\upload  #本地上传路径
+    downloadDir: D:\data\traindata\download
+  api:
+    image-info: http://192.168.30.6:18082/geoai/v1/image/
 
 breakpoint:
   upload:

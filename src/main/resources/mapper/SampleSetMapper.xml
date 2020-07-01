@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.iecas.sampleset.dao.SampleSetMapper">
+    <select id="getImageDataSetById" resultType="cn.iecas.sampleset.pojo.domain.SampleSetInfo">
+        select * from sample_set_info
+        where id = #{id}
+    </select>
+
+    <update id="updateCount" parameterType="cn.iecas.sampleset.pojo.domain.SampleSetInfo">
+        update sample_set_info
+        set count = #{count}
+        where id = #{id}
+    </update>
+    
+    <select id="listImageDataSetInfos" resultType="cn.iecas.sampleset.pojo.domain.SampleSetInfo" parameterType="cn.iecas.sampleset.pojo.dto.SampleSetInfoRequestParam">
+        SELECT * FROM sample_set_info
+        <where>
+            <if test="sampleSetInfoRequestParam.id!=0">
+                and id = #{sampleSetInfoRequestParam.id}
+            </if>
+            <if test="sampleSetInfoRequestParam.name!=null">
+                and name like CONCAT("%", #{sampleSetInfoRequestParam.name}, "%")
+            </if>
+            <if test="sampleSetInfoRequestParam.beginTime!=null">
+                <if test="sampleSetInfoRequestParam.endTime!=null">
+                    and datetime BETWEEN #{sampleSetInfoRequestParam.beginTime} AND #{sampleSetInfoRequestParam.endTime}
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <select id="getStatistic" resultType="cn.iecas.sampleset.pojo.entity.Statistic">
+        select id as iamgeDataSetId, target_num as targetNum from sample_set_info
+    </select>
+
+
+<!--    <select id="findAllById" resultType="cn.iecas.sampleservice.entity.sample.Tile">-->
+<!--        SELECT * FROM sample_image_infos WHERE id = #{id}-->
+<!--    </select>-->
+
+<!--    <delete id="deleteSpecific" parameterType="cn.iecas.sampleservice.entity.sample.Tile">-->
+<!--        DELETE FROM sample_image_infos-->
+<!--        <where>-->
+<!--            <if test="id!=null">-->
+<!--                AND id = #{id}-->
+<!--            </if>-->
+<!--            <if test="name!=null">-->
+<!--                and name = #{name}-->
+<!--            </if>-->
+<!--            <if test="attribute!=null">-->
+<!--                and attribute = #{attribute}-->
+<!--            </if>-->
+<!--        </where>-->
+<!--    </delete>-->
+<!--    <select id="findAllN" resultType="cn.iecas.sampleservice.entity.sample.Tile">-->
+<!--        SELECT * FROM sample_image_infos-->
+<!--    </select>-->
+<!--    <insert id="addImageInfos" parameterType="cn.iecas.sampleservice.entity.sample.Tile">-->
+<!--        INSERT INTO sample_image_infos(path,description,attribute,datasource,bit,band,dataSize,definition,size,number,postfix,labelSize,labelDescription,labelPostfix,direction,construction,datatime,name,category)-->
+<!--        values (#{path},#{description},#{attribute},#{datasource},#{bit},#{band},#{dataSize},#{definition},#{size},#{number},#{postfix},#{labelSize},#{labelDescription},#{labelPostfix},#{direction},#{construction},#{datatime},#{name},#{category})-->
+<!--    </insert>-->
+
+<!--    <select id="findByImage" parameterType="cn.iecas.sampleservice.entity.sample.Tile" resultType="cn.iecas.sampleservice.entity.sample.Tile">-->
+<!--        SELECT * FROM sample_image_infos-->
+<!--        <where>-->
+<!--            <if test="id!=null">-->
+<!--                and id = #{id}-->
+<!--            </if>-->
+<!--            <if test="name!=null">-->
+<!--                and name = #{name}-->
+<!--            </if>-->
+<!--            <if test="attribute!=null">-->
+<!--                and attribute = #{attribute}-->
+<!--            </if>-->
+<!--        </where>-->
+<!--    </select>-->
+
+    <update id="updateSampleSet">
+        update sample_set_info
+        <if test="field=='number'">
+            set sample_set_info.count = sample_set_info.count + #{value}
+        </if>
+        <if test="field=='datasize'">
+            set sample_set_infos.datasize = sample_set_infos.datasize + #{value}
+        </if>
+        <if test="field=='targetnum'">
+            set sample_set_infos.target_num = sample_set_infos.target_num + #{value}
+        </if>
+        where id = #{sampleSetid}
+    </update>
+</mapper>

@@ -1,2 +1,13 @@
 .idea/
 target/
+logs/
+.DS_Store
+src/.DS_Store
+src/main/.DS_Store
+src/main/java/.DS_Store
+src/main/java/cn/.DS_Store
+src/main/java/cn/iecas/.DS_Store
+src/main/java/cn/iecas/sampleset/.DS_Store
+src/main/java/cn/iecas/sampleset/pojo/.DS_Store
+src/main/java/cn/iecas/sampleset/utils/CreateThumbnail.java
+src/main/java/cn/iecas/sampleset/utils/SliceGenerateUtil.java
