@@ -112,7 +112,7 @@ public class SliceGenerateUtil {
 
     /**
      * 将经纬度范围转换为像素范围
-     * @param pointList 经纬度坐标点
+     * @param range 经纬度坐标点
      * @param dataset 原始影像
      * @return 切片的像素范围
      */
@@ -134,14 +134,5 @@ public class SliceGenerateUtil {
         pixel[2] = maxX;
         pixel[3] = maxY;
         return pixel;
-    }
-
-    public static void main(String[] args) {
-        List<String> points = new ArrayList<>();
-        points.add("144.9138840253173,13.576115980830716");
-        points.add("144.9138840253173,13.601717888818072");
-        points.add("144.94491515807974,13.601717888818072");
-        points.add("144.94491515807974,13.576115980830716");
-        generateSlice(points,"geodegree","D:\\temp\\安德森空军基地_2006-02-28.tif","d:\\temp\\test.jpg");
     }
 }
