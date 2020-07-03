@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,9 +50,6 @@ public class SampleSetServiceImpl extends ServiceImpl<SampleSetMapper, SampleSet
 
     @Autowired
     private SampleService sampleService;
-
-    @Autowired
-    private BaseDataSource baseDataSource;
 
     /**
      * 获取样本集的统计信息
@@ -125,7 +123,7 @@ public class SampleSetServiceImpl extends ServiceImpl<SampleSetMapper, SampleSet
      * @throws IOException
      */
     @Override
-    public void createSampleSet(SampleSetCreationInfo sampleSetCreationInfo) throws IOException {
+    public void createSampleSet(SampleSetCreationInfo sampleSetCreationInfo) throws IOException, ResourceAccessException {
         int userId = sampleSetCreationInfo.getUserId();
         SampleSetInfo sampleSet = SampleSetInfo.builder().status(SampleSetStatus.CREATING).description(sampleSetCreationInfo.getDescription())
                 .createTime(DateUtil.nowDate()).name(sampleSetCreationInfo.getSampleSetName()).source(sampleSetCreationInfo.getSource()).userId(userId).build();
@@ -176,9 +174,9 @@ public class SampleSetServiceImpl extends ServiceImpl<SampleSetMapper, SampleSet
 
     /**
      * 无需切片时，生成样本数据
-     * @param sampleSetInfo
-     * @param image
-     * @return
+     * @param sampleSetInfo 样本集信息
+     * @param image 影像信息
+     * @return 样本信息
      * @throws IOException
      */
     private SampleInfo createSample(SampleSetInfo sampleSetInfo, Image image, Manifest.Data label) throws IOException {
@@ -215,24 +213,22 @@ public class SampleSetServiceImpl extends ServiceImpl<SampleSetMapper, SampleSet
     private List<SampleInfo> createSliceSample(SampleSetInfo sampleSetInfo, Image image, Manifest.Data label) throws IOException {
         int sampleSetId = sampleSetInfo.getId();
         List<SampleInfo> sampleInfoList = new ArrayList<>();
+        String imageBaseName = FilenameUtils.getBaseName(image.getImageName());
         String imagePath = FileUtils.getStringPath(this.rootDir,image.getPath());
         List<Manifest.Data.Objects.ObjectInfo> objectInfoList = label.getObjects().getObject();
+
         int count = 0;
         for (Manifest.Data.Objects.ObjectInfo objectInfo : objectInfoList) {
             count++;
-            double[] range = new double[4];
-            label.getObjects().setObject(JSONArray.parseArray(JSON.toJSONString(Arrays.asList(objectInfo)))); ;
-            String sampleFileName = FilenameUtils.getBaseName(image.getImageName()) + "_" + count + ".tif";
-            String xmlFileName = FilenameUtils.getBaseName(image.getImageName()) + "_" + count + ".xml";
-            String samplePath = FileUtils.getStringPath(sampleSetInfo.getUserId(),"sample_set",sampleSetId,"image",sampleFileName);
-            String xmlFilePath = FileUtils.getStringPath(sampleSetInfo.getUserId(),"sample_set",sampleSetId,"xml",xmlFileName);
             List<String> pointList = objectInfo.getPoints().getPoint();
             Assert.notEmpty(pointList,"不存在目标点");
-            range[0] = pointList.stream().map(point->Double.parseDouble(point.split(",")[0])).min(Double::compareTo).get();
-            range[1] = pointList.stream().map(point->Double.parseDouble(point.split(",")[1])).min(Double::compareTo).get();
-            range[2] = pointList.stream().map(point->Double.parseDouble(point.split(",")[0])).max(Double::compareTo).get();
-            range[3] = pointList.stream().map(point->Double.parseDouble(point.split(",")[1])).max(Double::compareTo).get();
-            SliceGenerateUtil.generateSlice(range,imagePath,FileUtils.getStringPath(this.rootDir,samplePath));
+            
+            label.getObjects().setObject(JSONArray.parseArray(JSON.toJSONString(Arrays.asList(objectInfo))));
+            String samplePath = FileUtils.getStringPath(sampleSetInfo.getUserId(),"sample_set",sampleSetId,"image",imageBaseName + "_" + count + ".tif");
+            String xmlFilePath = FileUtils.getStringPath(sampleSetInfo.getUserId(),"sample_set",sampleSetId,"xml",imageBaseName + "_" + count + ".xml");
+
+
+            SliceGenerateUtil.generateSlice(pointList,objectInfo.getCoordinate(),imagePath,FileUtils.getStringPath(this.rootDir,samplePath));
             FileUtils.objectToXML(Manifest.Data.class,label,new File(FileUtils.getStringPath(this.rootDir,xmlFilePath)));
             SampleInfo sampleInfo = SampleInfo.builder().sampleSetId(sampleSetInfo.getId())
                     .bands(image.getBands()).createTime(DateUtil.nowDate()).hasThumb(false).build();

@@ -1,6 +1,6 @@
 package cn.iecas.sampleset.controller;
 
-import cn.iecas.sampleset.annotation.Log;
+import cn.iecas.sampleset.common.annotation.Log;
 import cn.iecas.sampleset.pojo.dto.*;
 import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import cn.iecas.sampleset.pojo.dto.common.PageResult;

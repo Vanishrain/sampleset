@@ -1,4 +1,4 @@
-package cn.iecas.sampleset.config;
+package cn.iecas.sampleset.common.config;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

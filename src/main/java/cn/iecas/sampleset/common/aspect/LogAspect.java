@@ -1,6 +1,6 @@
-package cn.iecas.sampleset.aspect;
+package cn.iecas.sampleset.common.aspect;
 
-import cn.iecas.sampleset.annotation.Log;
+import cn.iecas.sampleset.common.annotation.Log;
 import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class LogAspect {
 
-    @Pointcut("@annotation(cn.iecas.sampleset.annotation.Log)")
+    @Pointcut("@annotation(cn.iecas.sampleset.common.annotation.Log)")
     public void pointcut(){
     }
 

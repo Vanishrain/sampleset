@@ -1,4 +1,4 @@
-package cn.iecas.sampleset.annotation;
+package cn.iecas.sampleset.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

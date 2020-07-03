@@ -21,7 +21,7 @@
                 and id = #{sampleSetInfoRequestParam.id}
             </if>
             <if test="sampleSetInfoRequestParam.name!=null">
-                and name like CONCAT("%", #{sampleSetInfoRequestParam.name}, "%")
+                and name like '%${sampleSetInfoRequestParam.name}%'
             </if>
             <if test="sampleSetInfoRequestParam.beginTime!=null">
                 <if test="sampleSetInfoRequestParam.endTime!=null">
