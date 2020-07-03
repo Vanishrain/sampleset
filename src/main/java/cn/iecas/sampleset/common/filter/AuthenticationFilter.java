@@ -6,8 +6,10 @@ import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import cn.iecas.sampleset.service.UserInfoService;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -29,7 +31,8 @@ import java.util.Vector;
 /**
  * token过滤器，验证token并将userid和username加入请求参数
  */
-@Configuration
+@Slf4j
+@Component
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -38,13 +41,17 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = request.getHeader("token");
+        System.out.println("token is " + token);
         CommonResult commonResult = userInfoService.getUserInfo(token);
-
-        if (commonResult.getData() == null){
+        if (commonResult.getData() == null || commonResult.getMessage().equals("返回新Token")){
+            log.error("token验证失败a");
+            response.setContentType("text/html;charset=utf-8");
             response.getWriter().write(JSONObject.toJSONString(commonResult,SerializerFeature.WriteMapNullValue));
+            return;
         }
+        log.info("token验证成功");
 
-        UserInfo userInfo = (UserInfo) commonResult.getData();
+        UserInfo userInfo = JSONObject.parseObject(JSONObject.toJSONString(commonResult.getData()),UserInfo.class) ;
         int userId = userInfo.getId();
         String userName = userInfo.getName();
 
@@ -98,7 +105,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             super(request);
             this.body = body;
             this.params.putAll(request.getParameterMap());
-            //request.get
         }
 
 

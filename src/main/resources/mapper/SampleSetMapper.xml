@@ -17,6 +17,7 @@
     <select id="listImageDataSetInfos" resultType="cn.iecas.sampleset.pojo.domain.SampleSetInfo" parameterType="cn.iecas.sampleset.pojo.dto.SampleSetInfoRequestParam">
         SELECT * FROM sample_set_info
         <where>
+            user_id = #{sampleSetInfoRequestParam.userId}
             <if test="sampleSetInfoRequestParam.id!=0">
                 and id = #{sampleSetInfoRequestParam.id}
             </if>

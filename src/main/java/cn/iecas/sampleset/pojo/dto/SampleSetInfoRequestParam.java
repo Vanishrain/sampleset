@@ -18,6 +18,11 @@ public class SampleSetInfoRequestParam {
     private int id;
 
     /**
+     * 用户id
+     */
+    private int userId;
+
+    /**
      * 样本集名称
      */
     private String name;
