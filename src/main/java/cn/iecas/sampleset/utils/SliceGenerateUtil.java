@@ -28,23 +28,24 @@ public class SliceGenerateUtil {
      */
     public static void generateSlice(List<String> pointList, String type, String srcPath, String outputPath){
         gdal.AllRegister();
-        Dataset dataset = gdal.Open(srcPath);
+        double[] range = new double[4];
         double[] sliceGeoTransform = null;
 
-        int[] range = new int[4];
+
+        Dataset dataset = gdal.Open(srcPath);
+        range[0] = pointList.stream().map(point->Double.parseDouble(point.split(",")[0])).min(Double::compareTo).get();
+        range[1] = pointList.stream().map(point->Double.parseDouble(point.split(",")[1])).min(Double::compareTo).get();
+        range[2] = pointList.stream().map(point->Double.parseDouble(point.split(",")[0])).max(Double::compareTo).get();
+        range[3] = pointList.stream().map(point->Double.parseDouble(point.split(",")[1])).max(Double::compareTo).get();
+
         if ("geodegree".equals(type.toLowerCase())){
-            range = convertGeoDegreeToPixel(pointList, dataset);
             double[] srcGeoTransform = dataset.GetGeoTransform();
             sliceGeoTransform = new double[]{range[0],srcGeoTransform[1],0,range[1],0,srcGeoTransform[5]};
-        }else{
-            range[0] = pointList.stream().map(point->Integer.parseInt(point.split(",")[0])).min(Integer::compareTo).get();
-            range[1] = pointList.stream().map(point->Integer.parseInt(point.split(",")[1])).min(Integer::compareTo).get();
-            range[2] = pointList.stream().map(point->Integer.parseInt(point.split(",")[0])).max(Integer::compareTo).get();
-            range[3] = pointList.stream().map(point->Integer.parseInt(point.split(",")[1])).max(Integer::compareTo).get();
+            range = convertGeoDegreeToPixel(range, dataset);
         }
 
         Driver pDriver = gdal.GetDriverByName("GTiff");
-        int minX = range[0], minY = range[1], maxX = range[2], maxY = range[3];
+        int minX = (int)range[0], minY = (int)range[1], maxX = (int)range[2], maxY = (int)range[3];
         int sliceWidth = maxX - minX, sliceHeight = maxY - minY;
         File outputFile = new File(outputPath);
         if(!outputFile.getParentFile().exists())
@@ -115,25 +116,19 @@ public class SliceGenerateUtil {
      * @param dataset 原始影像
      * @return 切片的像素范围
      */
-    private static int[] convertGeoDegreeToPixel(List<String> pointList, Dataset dataset){
-        double minLon = pointList.stream().map(point->Double.parseDouble(point.split(",")[0])).min(Double::compareTo).get();
-        double minLat = pointList.stream().map(point->Double.parseDouble(point.split(",")[1])).min(Double::compareTo).get();
-        double maxLon = pointList.stream().map(point->Double.parseDouble(point.split(",")[0])).max(Double::compareTo).get();
-        double maxLat = pointList.stream().map(point->Double.parseDouble(point.split(",")[1])).max(Double::compareTo).get();
-
-
+    private static double[] convertGeoDegreeToPixel(double[] range, Dataset dataset){
         int srcWidth = dataset.getRasterXSize();
         int srcHeight = dataset.getRasterYSize();
         double[] srcInfo = getBBoxFromImage(dataset);
 
         double srcLatRange = srcInfo[3] - srcInfo[1];
         double srcLonRange = srcInfo[2] - srcInfo[0];
-        int minX = (int) (srcWidth * (minLon - srcInfo[0]) / srcLonRange);
-        int maxX = (int) (srcWidth * (maxLon - srcInfo[0]) / srcLonRange);
-        int maxY = srcHeight - (int) (srcHeight * (minLat - srcInfo[1]) / srcLatRange);
-        int minY = srcHeight - (int) (srcHeight * (maxLat - srcInfo[1]) / srcLatRange);
+        int minX = (int) (srcWidth * (range[0] - srcInfo[0]) / srcLonRange);
+        int maxX = (int) (srcWidth * (range[2] - srcInfo[0]) / srcLonRange);
+        int maxY = srcHeight - (int) (srcHeight * (range[1] - srcInfo[1]) / srcLatRange);
+        int minY = srcHeight - (int) (srcHeight * (range[3] - srcInfo[1]) / srcLatRange);
 
-        int[] pixel = new int[4];
+        double[] pixel = new double[4];
         pixel[0] = minX;
         pixel[1] = minY;
         pixel[2] = maxX;
@@ -149,10 +144,4 @@ public class SliceGenerateUtil {
         points.add("144.94491515807974,13.576115980830716");
         generateSlice(points,"geodegree","D:\\temp\\安德森空军基地_2006-02-28.tif","d:\\temp\\test.jpg");
     }
-
-
-
-
-
-
 }
