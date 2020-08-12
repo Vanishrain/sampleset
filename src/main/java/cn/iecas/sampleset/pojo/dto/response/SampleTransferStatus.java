@@ -6,11 +6,6 @@ import lombok.Data;
 @Data
 public class SampleTransferStatus {
     /**
-     * 文件当前的分块数
-     */
-    private int chunk;
-
-    /**
      * md5值
      */
     private String md5;
@@ -20,10 +15,16 @@ public class SampleTransferStatus {
      */
     private int chunks;
 
+
     /**
      * 样本集id
      */
     private int sampleSetId;
+
+    /**
+     * 文件当前的分块数
+     */
+    private int uploadedChunk;
 
     /**
      * 上传状态

@@ -58,7 +58,7 @@ public class LizardfsSource implements BaseDataSource {
 
     @Override
     public void deletes(SampleInfo sampleInfo) throws Exception {
-        File file = new File(rootDir + File.separator + sampleInfo.getStoragePath());
+        File file = new File(rootDir + File.separator + sampleInfo.getSamplePath());
         if (file.exists())
             FileUtils.forceDelete(file);
 
@@ -93,7 +93,7 @@ public class LizardfsSource implements BaseDataSource {
             BeanUtils.copyProperties(sampleInfo,sample);
 
             if (!sampleInfo.isHasThumb()){
-                String storagePath = rootDir + File.separator + sampleInfo.getStoragePath();//存储路径
+                String storagePath = rootDir + File.separator + sampleInfo.getSamplePath();//存储路径
                 byte[] data = readFile(storagePath);
                 if (data==null)
                     continue;

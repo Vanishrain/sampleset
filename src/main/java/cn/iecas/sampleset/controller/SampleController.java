@@ -4,7 +4,7 @@ import cn.iecas.sampleset.common.annotation.Log;
 import cn.iecas.sampleset.pojo.dto.*;
 import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import cn.iecas.sampleset.pojo.dto.common.PageResult;
-import cn.iecas.sampleset.pojo.dto.request.TileTransferParams;
+import cn.iecas.sampleset.pojo.dto.request.SampleSetTransferParams;
 import cn.iecas.sampleset.pojo.dto.response.SampleTransferStatus;
 import cn.iecas.sampleset.pojo.entity.Sample;
 import cn.iecas.sampleset.pojo.enums.SampleType;
@@ -59,20 +59,20 @@ public class SampleController {
 
     @PostMapping(value = "/upload")
     @Log("分块断点上传切片压缩包")
-    public CommonResult uploadTiles(HttpServletRequest request, TileTransferParams tileTransferParams) throws Exception {
+    public CommonResult<SampleSetTransferParams> uploadTiles(HttpServletRequest request, SampleSetTransferParams sampleSetTransferParams) throws Exception {
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
         if (!isMultipart)
-            return new CommonResult().fail().message("请选择上传文件");
+            return new CommonResult<SampleSetTransferParams>().data(sampleSetTransferParams).fail().message("请选择上传文件");
 
-        sampleService.uploadTiles(tileTransferParams);
-        return new CommonResult().success().message("上传分块结束");
+        sampleSetTransferParams = this.sampleService.uploadTiles(sampleSetTransferParams);
+        return new CommonResult<SampleSetTransferParams>().data(sampleSetTransferParams).success().message("上传分块结束");
     }
 
 
     @Log("秒传判断，断点判断")
-    @GetMapping(value = "checkFileMd5")
-    public CommonResult<SampleTransferStatus> checkFileMd5(int imageDatasetId, String md5) throws Exception {
-        SampleTransferStatus sampleTransferStatus = transferService.checkFileMd5(imageDatasetId,md5);
+    @GetMapping(value = "/checkFileMd5")
+    public CommonResult<SampleTransferStatus> checkFileMd5(int sampleSetId, String md5) throws Exception {
+        SampleTransferStatus sampleTransferStatus = transferService.checkFileMd5(sampleSetId,md5);
         return new CommonResult<SampleTransferStatus>().success().data(sampleTransferStatus).message("检查md5结束");
     }
 

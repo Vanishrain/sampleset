@@ -49,7 +49,7 @@ public class SampleInfo {
 
     private Double resolution;
 
-    private String storagePath;
+    private String samplePath;
 
     private String visualThumb;
 

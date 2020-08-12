@@ -2,22 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.iecas.sampleset.dao.TileTransferMapper">
-    <select id="getByDatasetIdAndMD5" resultType="cn.iecas.sampleset.pojo.domain.SampleTransferInfo">
+    <select id="getByDatasetIdAndMD5" resultType="cn.iecas.sampleset.pojo.domain.SampleSetTransferInfo">
         select
         t.id,
         t.md5,
-        t.chunk,
         t.chunks,
         t.version,
+        t.uploaded_chunk,
         t.file_name as fileName,
         t.status as transferStatus,
         t.create_time as createTime,
-        t.dataset_id as imageDatasetId
-        from sample_tile_upload_info t where t.dataset_id=#{datasetId} and t.md5=#{md5}
+        t.sample_set_id as sampleSetId
+        from sample_tile_upload_info t where t.sample_set_id=#{sampleSetId} and t.md5=#{md5}
     </select>
 
     <update id="addChunkCount">
-        update sample_tile_upload_info  set chunk = chunk + #{count} , chunks = #{chunks} where dataset_id = #{imageDatasetId} and md5 = #{md5}
+        update sample_tile_upload_info  set uploaded_chunk = uploaded_chunk + #{count} , chunks = #{chunks} where sample_set_id = #{sampleSetId} and md5 = #{md5}
     </update>
 
 </mapper>

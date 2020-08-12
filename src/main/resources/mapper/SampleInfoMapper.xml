@@ -13,9 +13,9 @@
     </select>
 
     <insert id="batchInsert">
-        insert into sample_tile_infos (name, storage_path, label_path, visual_path, imagesetid, create_time,version) values
-        <foreach collection ="sampleInfoList" item="tileInfoDO" separator =",">
-            (#{tileInfoDO.name},#{tileInfoDO.storagePath}, #{tileInfoDO.labelPath}, #{tileInfoDO.visualPath}, #{tileInfoDO.imagesetid}, #{tileInfoDO.createTime},#{tileInfoDO.version})
+        insert into sample_tile_infos (name, sample_path, label_path, visual_path, sample_thumb, has_thumb, sample_set_id, create_time,version) values
+        <foreach collection ="sampleInfoList" item="sampleInfoDO" separator =",">
+            (#{sampleInfoDO.name},#{sampleInfoDO.samplePath}, #{sampleInfoDO.labelPath}, #{sampleInfoDO.visualPath},,#{sampleInfoDO.sampleThumb},,#{sampleInfoDO.hasThumb} #{sampleInfoDO.imagesetid}, #{sampleInfoDO.createTime},#{sampleInfoDO.version})
         </foreach>
     </insert>
 
@@ -32,7 +32,7 @@
         <where>
             sample_set_id = #{sampleRequestParams.sampleSetId}
             <if test="sampleRequestParams.beginTime!=null">
-                <if test="sampleRequestParams.endTime!=null">
+                <if test="sampleReqParamuestParams.endTime!=null">
                     and createTime BETWEEN #{sampleRequestParams.beginTime} AND #{sampleRequestParams.endTime}
                 </if>
             </if>

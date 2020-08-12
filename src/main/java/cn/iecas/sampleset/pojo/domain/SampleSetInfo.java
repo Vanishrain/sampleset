@@ -33,6 +33,11 @@ public class SampleSetInfo {
     private int userId;
 
     /**
+     * 样本集大小
+     */
+    private String size;
+
+    /**
      * 样本集名称
      */
     private String name;
@@ -62,6 +67,11 @@ public class SampleSetInfo {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
+
+    /**
+     * 是否进行了切片
+     */
+    private boolean isSlice;
 
     /**
      * 是否公开

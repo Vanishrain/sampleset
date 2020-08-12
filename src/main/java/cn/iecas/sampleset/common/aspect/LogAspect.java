@@ -32,8 +32,10 @@ public class LogAspect {
         for (Object arge : args)
             log.info("参数为: {}", arge.toString());
         try{
+            long begin = System.currentTimeMillis();
             result = (CommonResult<?>) point.proceed();
-            log.info("{} 方法执行完毕，返回参数 {}", methodName, result);
+            long timeConsuming = System.currentTimeMillis() - begin;
+            log.info("{} 方法执行完毕，返回参数 {}, 共耗时 {} 毫秒", methodName, result,timeConsuming);
         }catch (Exception e){
             result = new CommonResult<>().fail().message(e.getMessage());
             log.error("{} 方法执行异常，返回参数 {}, 异常栈: {}", methodName, result, e.getStackTrace()[0]);

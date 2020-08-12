@@ -21,7 +21,7 @@
             <if test="sampleSetInfoRequestParam.id!=0">
                 and id = #{sampleSetInfoRequestParam.id}
             </if>
-            <if test="sampleSetInfoRequestParam.name!=null">
+            <if test="sampleSetInfoRequestParam.name!=null and sampleSetInfoRequestParam.name!=''">
                 and name like '%${sampleSetInfoRequestParam.name}%'
             </if>
             <if test="sampleSetInfoRequestParam.beginTime!=null">

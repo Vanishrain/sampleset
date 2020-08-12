@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Date;
 
 @Data
-public class TileTransferParams {
+public class SampleSetTransferParams {
     //当前为第几块分片
     private int chunk;
 
@@ -19,11 +19,16 @@ public class TileTransferParams {
     //文件名
     private String name;
 
+    /**
+     * 块大小
+     */
+    private long chunkSize;
+
     //样本集id
-    private int imagesetid;
+    private int sampleSetId;
 
     //创建时间
-    private Date create_time;
+    private Date createTime;
 
     //分片对象
     private MultipartFile file;

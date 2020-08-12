@@ -14,7 +14,7 @@ import java.util.List;
 
 @Repository
 public interface SampleInfoMapper extends BaseMapper<SampleInfo> {
-    void batchInsert(@Param("tileInfosDOList") List<SampleInfo> sampleInfoList);
+    //void batchInsert(@Param("sampleInfoList") List<SampleInfo> sampleInfoList);
     List<SampleInfo> getIdByPath(@Param("imagePathList") List<String> imagePathList);
     int getImageDataSetId(Integer tileIds);
     IPage<SampleInfo> listSampleInfos(Page page, @Param("sampleRequestParams") SampleRequestParams sampleRequestParams);

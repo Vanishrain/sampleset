@@ -123,7 +123,7 @@ public class FDFSSourceImpl implements BaseDataSource {
         String labelPath;
 
         if (sampleInfo != null){
-            storagePath = sampleInfo.getStoragePath();
+            storagePath = sampleInfo.getSamplePath();
             visualPath = sampleInfo.getVisualPath();
             labelPath = sampleInfo.getLabelPath();
 
@@ -172,7 +172,7 @@ public class FDFSSourceImpl implements BaseDataSource {
             if(sampleInfo.isHasThumb())
                 imageBase64String = sampleInfo.getSampleThumb();
             else {
-                String storagePath = sampleInfo.getStoragePath();//存储路径
+                String storagePath = sampleInfo.getSamplePath();//存储路径
                 byte[] result = storageClient.download_file1(storagePath);
                 if (result==null)
                     continue;

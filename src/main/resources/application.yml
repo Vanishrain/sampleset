@@ -47,9 +47,9 @@ value:
   datasource: lizardfs
   dir:
     rootDir: d:\\temp
-    monitorDir: D:\\data\\traindata\\upload  #本地上传路径
-    downloadDir: D:\data\traindata\download
+    publicRootDir: d:\\data\\traindata\public
   api:
+    user-info: http://192.168.30.19:31172/v1.0/airstudio/user/info
     image-info: http://192.168.30.6:18082/geoai/v1/image/
 
 breakpoint:

@@ -7,8 +7,10 @@ import cn.iecas.sampleset.service.UserInfoService;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -46,6 +48,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (commonResult.getData() == null || commonResult.getMessage().equals("返回新Token")){
             log.error("token验证失败a");
             response.setContentType("text/html;charset=utf-8");
+            commonResult = new CommonResult<>().setCode(HttpStatus.UNAUTHORIZED).message("token验证失败");
             response.getWriter().write(JSONObject.toJSONString(commonResult,SerializerFeature.WriteMapNullValue));
             return;
         }
@@ -57,22 +60,39 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
 
 
+//        RequestWrapper requestWrapper = null;
+//        if (request.getMethod().toUpperCase().equals("GET")){
+//            requestWrapper = new RequestWrapper(request);
+//            requestWrapper.addParameter("userId",userId);
+//            requestWrapper.addParameter("userName",userName);
+//        }else {
+//            String line;
+//            StringBuilder content = new StringBuilder();
+//            while((line = request.getReader().readLine())!=null){
+//                content.append(line);
+//            }
+//            JSONObject body = StringUtils.isAllBlank(content) ? new JSONObject() : JSONObject.parseObject(content.toString());
+//            body.put("userId",userId);
+//            body.put("userName",userName);
+//            requestWrapper = new RequestWrapper(request,body.toJSONString().getBytes());
+//        }
         RequestWrapper requestWrapper = null;
-        if (request.getMethod().toUpperCase().equals("GET")){
-            requestWrapper = new RequestWrapper(request);
-            requestWrapper.addParameter("userId",userId);
-            requestWrapper.addParameter("userName",userName);
-        }else {
+        String contentType = request.getContentType();
+        if (contentType!=null && contentType.contains("application/json")){
             String line;
             StringBuilder content = new StringBuilder();
             while((line = request.getReader().readLine())!=null){
                 content.append(line);
             }
 
-            JSONObject body = JSONObject.parseObject(content.toString());
+            JSONObject body = StringUtils.isAllBlank(content) ? new JSONObject() : JSONObject.parseObject(content.toString());
             body.put("userId",userId);
             body.put("userName",userName);
             requestWrapper = new RequestWrapper(request,body.toJSONString().getBytes());
+        }else {
+            requestWrapper = new RequestWrapper(request);
+            requestWrapper.addParameter("userId",userId);
+            requestWrapper.addParameter("userName",userName);
         }
 
 

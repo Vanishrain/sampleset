@@ -6,5 +6,5 @@ import org.springframework.web.client.ResourceAccessException;
 import java.util.List;
 
 public interface ImageService {
-    List<Image> listImageInfoByIdList(List<Integer> imageIdList) throws ResourceAccessException;
+    List<Image> listImageInfoByIdList(List<Integer> imageIdList,String token) throws ResourceAccessException;
 }

@@ -12,6 +12,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -24,6 +26,12 @@ import java.util.Arrays;
  */
 @Slf4j
 public class FileUtils {
+
+    private static final double KB = 1024D;
+    private static final double MB = 1024 * 1024D;
+    private static final double GB = 1024 * 1024 * 1024D;
+
+
 
     /**
      * 封装paths方法，使任意类型均可转换为string
@@ -86,6 +94,16 @@ public class FileUtils {
     }
 
     /**
+     * 移动文件到文件夹
+     * @param srcFile
+     * @param destFile
+     * @throws IOException
+     */
+    public static void moveFileToDirectory(File srcFile, File destFile) throws IOException {
+        org.apache.commons.io.FileUtils.moveFileToDirectory(srcFile,destFile,true);
+    }
+
+    /**
      * 拷贝文件到某一文件夹
      * @param srcFile
      * @param destDir
@@ -112,4 +130,85 @@ public class FileUtils {
         xStream.toXML(data,fileOutputStream);
         fileOutputStream.close();
     }
+
+    /**
+     * 移动文件夹
+     */
+    public static void moveDirectoryToDirectory(File srcFile, File destFile) throws IOException {
+        org.apache.commons.io.FileUtils.moveDirectoryToDirectory(srcFile,destFile,true);
+    }
+
+
+
+    /**
+     * 删除文件夹
+     * @param directory
+     * @throws IOException
+     */
+    public static void deleteDirectory(File directory) throws IOException {
+        org.apache.commons.io.FileUtils.deleteDirectory(directory);
+    }
+
+
+    /**
+     * 读取缩略图到字节数组
+     *
+     * @param filePath
+     * @return
+     * @throws IOException
+     */
+    public static byte[] getImageByteArray(String filePath) throws IOException {
+        File thumbnailFile = new File(filePath);
+        if (!thumbnailFile.exists())
+            return null;
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        BufferedImage bufferedImage = ImageIO.read(thumbnailFile);
+        ImageIO.write(bufferedImage,"jpg",byteArrayOutputStream);
+        byte[] data =  byteArrayOutputStream.toByteArray();
+        byteArrayOutputStream.close();
+        return data;
+    }
+
+    /**
+     * 计算文件夹的大小，并返回string值
+     * @param filePath
+     * @return
+     */
+    public static String getDirectorySize(String filePath){
+        File file = new File(filePath);
+        long size = org.apache.commons.io.FileUtils.sizeOfDirectory(file);
+        if (size == 0)
+            return "0";
+        return fileSizeToString(Double.valueOf(size));
+    }
+
+    private static String fileSizeToString(double size){
+        if (size < KB){
+            size = Double.valueOf(String.format("%.2f",size));
+            return size + "B";
+        }
+        if (size >= KB && size < MB ){
+            size = Double.valueOf(String.format("%.2f",size/KB));
+            return size + "KB";
+
+        }
+
+
+        if (size >=MB && size < GB){
+            size = Double.valueOf(String.format("%.2f",size/MB));
+            return size + "MB";
+        }
+
+        size = Double.valueOf(String.format("%.2f",size/GB));
+        return size + "GB";
+    }
+
+    public static void main(String[] args) {
+        //long size = org.apache.commons.io.FileUtils.sizeOfDirectory(new File("D:\\Data\\traindata"));
+        String strSize = fileSizeToString(Double.valueOf("51602326093"));
+        System.out.println(strSize);
+    }
+
+
 }

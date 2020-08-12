@@ -36,4 +36,15 @@ public class CommonResult<T> {
         code(HttpStatus.INTERNAL_SERVER_ERROR);
         return this;
     }
+
+    public CommonResult<T> setCode(String code){
+        if (code.toLowerCase().equals("error"))
+            code(HttpStatus.INTERNAL_SERVER_ERROR);
+        return this;
+    }
+
+    public CommonResult<T> setCode(HttpStatus httpStatus){
+        this.code = httpStatus;
+        return this;
+    }
 }

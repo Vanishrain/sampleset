@@ -17,28 +17,29 @@ public class SampleSetStatusTypeHandler extends BaseTypeHandler<SampleSetStatus>
 
     @Override
     public SampleSetStatus getNullableResult(ResultSet resultSet, String s) throws SQLException {
-        int sampleSetStatusValue = resultSet.getInt(s);
-        if (sampleSetStatusValue == 0)
-            return SampleSetStatus.CREATING;
+        switch (resultSet.getInt(s)){
+            case 0: return SampleSetStatus.CREATING;
+            case 1: return SampleSetStatus.TOUPLOAD;
+            default:return SampleSetStatus.FINISH;
+        }
 
-        return SampleSetStatus.FINISH;
     }
 
     @Override
     public SampleSetStatus getNullableResult(ResultSet resultSet, int i) throws SQLException {
-        int sampleSetStatusValue = resultSet.getInt(i);
-        if (sampleSetStatusValue == 0)
-            return SampleSetStatus.CREATING;
-
-        return SampleSetStatus.FINISH;
+        switch (resultSet.getInt(i)){
+            case 0: return SampleSetStatus.CREATING;
+            case 1: return SampleSetStatus.TOUPLOAD;
+            default:return SampleSetStatus.FINISH;
+        }
     }
 
     @Override
     public SampleSetStatus getNullableResult(CallableStatement callableStatement, int i) throws SQLException {
-        int sampleSetStatusValue = callableStatement.getInt(i);
-        if (sampleSetStatusValue == 0)
-            return SampleSetStatus.CREATING;
-
-        return SampleSetStatus.FINISH;
+        switch (callableStatement.getInt(i)){
+            case 0: return SampleSetStatus.CREATING;
+            case 1: return SampleSetStatus.TOUPLOAD;
+            default:return SampleSetStatus.FINISH;
+        }
     }
 }

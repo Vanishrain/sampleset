@@ -1,7 +1,7 @@
 package cn.iecas.sampleset.pojo.enums;
 
 public enum  SampleSetStatus {
-    CREATING(0), FINISH(1);
+    CREATING(0), TOUPLOAD(1), FINISH(2);
 
     private int value;
 

@@ -123,10 +123,10 @@ public class SliceGenerateUtil {
 
         double srcLatRange = srcInfo[3] - srcInfo[1];
         double srcLonRange = srcInfo[2] - srcInfo[0];
-        int minX = (int) (srcWidth * (range[0] - srcInfo[0]) / srcLonRange);
-        int maxX = (int) (srcWidth * (range[2] - srcInfo[0]) / srcLonRange);
-        int maxY = srcHeight - (int) (srcHeight * (range[1] - srcInfo[1]) / srcLatRange);
-        int minY = srcHeight - (int) (srcHeight * (range[3] - srcInfo[1]) / srcLatRange);
+        int minX = (int) (srcWidth * (range[1] - srcInfo[0]) / srcLonRange);
+        int maxX = (int) (srcWidth * (range[3] - srcInfo[0]) / srcLonRange);
+        int maxY = srcHeight - (int) (srcHeight * (range[0] - srcInfo[1]) / srcLatRange);
+        int minY = srcHeight - (int) (srcHeight * (range[2] - srcInfo[1]) / srcLatRange);
 
         double[] pixel = new double[4];
         pixel[0] = minX;
