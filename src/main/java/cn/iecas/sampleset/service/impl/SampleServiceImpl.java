@@ -118,7 +118,7 @@ public class SampleServiceImpl extends ServiceImpl<SampleInfoMapper, SampleInfo>
         Assert.notNull(sampleSetTransferInfo,"请先对文件进行md5检查");
 
         if ((sampleSetTransferInfo.getChunks() != sampleSetTransferInfo.getUploadedChunk())
-            || (sampleSetTransferInfo.getChunks()==0)){
+            || (sampleSetTransferInfo.getUploadedChunk()==0)){
             uploadFilePath = transferService.transferTiles(sampleSetTransferParams,uploadFilePath);
             isComplete = transferService.checkAndSetUploadProgress(sampleSetTransferParams, uploadFilePath);
         }

@@ -90,7 +90,7 @@ public class AsyncServiceImpl implements AsyncService {
             SampleInfo sampleInfo = new SampleInfo();
             sampleInfo.setHasThumb(false);
             String sampleFileBaseName = FilenameUtils.getBaseName(sampleFile.getName());
-            String sampleRelativePath = FileUtils.getStringPath(userId,"sample_set",sampleSetId);
+            String sampleRelativePath = sampleSetInfo.getPath();
             String xmlFilePath = FileUtils.getStringPath(this.rootPath,sampleRelativePath,SampleFileType.SAMPLE_XML,sampleFileBaseName+".xml");
 
             if (sampleFile.length() > FILE_SIZE){
