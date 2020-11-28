@@ -6,6 +6,7 @@ import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import cn.iecas.sampleset.service.UserInfoService;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +35,10 @@ import java.util.Vector;
  * token过滤器，验证token并将userid和username加入请求参数
  */
 @Slf4j
-@Component
+@Data
 public class AuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
+
     private UserInfoService userInfoService;
 
     @Override

@@ -1,5 +1,6 @@
 package cn.iecas.sampleset.service.impl;
 
+import cn.iecas.sampleset.common.annotation.MethodLog;
 import cn.iecas.sampleset.common.constant.SampleFileType;
 import cn.iecas.sampleset.pojo.domain.SampleInfo;
 import cn.iecas.sampleset.pojo.domain.SampleSetInfo;
@@ -50,8 +51,9 @@ public class AsyncServiceImpl implements AsyncService {
 
     private static final int FILE_SIZE = 1024 * 1024;
 
-    @Async
+    //@Async
     @Override
+    @MethodLog("解压缩并存储样本数据")
     public void decompressAndStorageSampleSet(SampleSetInfo sampleSetInfo, String md5, String uploadFilePath)  {
         int sampleSetId = sampleSetInfo.getId();
         String destPath = new File(uploadFilePath).getParentFile().getAbsolutePath()+File.separator+"compress";

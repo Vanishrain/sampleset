@@ -1,6 +1,7 @@
 package cn.iecas.sampleset.common.aspect;
 
-import cn.iecas.sampleset.common.annotation.Log;
+import cn.iecas.sampleset.common.annotation.ControllerLog;
+import cn.iecas.sampleset.common.annotation.MethodLog;
 import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -18,14 +19,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class LogAspect {
 
-    @Pointcut("@annotation(cn.iecas.sampleset.common.annotation.Log)")
-    public void pointcut(){
+    @Pointcut("@annotation(cn.iecas.sampleset.common.annotation.ControllerLog)")
+    public void ControllerPointcut(){
     }
 
-    @Around("pointcut()")
-    public Object around(ProceedingJoinPoint point) throws Throwable {
+    @Pointcut("@annotation(cn.iecas.sampleset.common.annotation.MethodLog)")
+    public void MethodPointcut(){
+    }
+
+    @Around("ControllerPointcut()")
+    public Object controllerAround(ProceedingJoinPoint point) throws Throwable {
         CommonResult<?> result = null;
-        String methodName = ((MethodSignature)point.getSignature()).getMethod().getAnnotation(Log.class).value();
+        String methodName = ((MethodSignature)point.getSignature()).getMethod().getAnnotation(ControllerLog.class).value();
         log.info("进入 {} 的 {} 方法",point.getSignature().getDeclaringType().getName(),
                 methodName);
         Object[] args = point.getArgs();
@@ -44,6 +49,20 @@ public class LogAspect {
 
         return result;
 
+    }
+
+    @Around("MethodPointcut()")
+    public void methodAround(ProceedingJoinPoint point) throws Throwable {
+        String methodName = ((MethodSignature)point.getSignature()).getMethod().getAnnotation(MethodLog.class).value();
+        log.info("进入 {} 的 {} 方法",point.getSignature().getDeclaringType().getName(),
+                methodName);
+        Object[] args = point.getArgs();
+        for (Object arg : args)
+            log.info("参数为: {}", arg);
+        long begin = System.currentTimeMillis();
+        Object result = point.proceed();
+        long timeConsuming = System.currentTimeMillis() - begin;
+        log.info("{} 方法执行完毕，返回参数 {}, 共耗时 {} 毫秒", methodName, result,timeConsuming);
     }
 
 }

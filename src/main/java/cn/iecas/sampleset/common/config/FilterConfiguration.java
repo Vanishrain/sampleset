@@ -1,7 +1,6 @@
 package cn.iecas.sampleset.common.config;
 
-import cn.iecas.sampleset.common.filter.AuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,19 +10,6 @@ import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 public class FilterConfiguration {
-
-    @Autowired
-    AuthenticationFilter authenticationFilter;
-
-    @Bean
-    public FilterRegistrationBean buildAuthenticationFilter(){
-        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
-        filterRegistrationBean.setOrder(3);
-        filterRegistrationBean.setFilter(authenticationFilter);
-        filterRegistrationBean.setName("AuthenticationFilter");
-        filterRegistrationBean.addUrlPatterns("/*");
-        return filterRegistrationBean;
-    }
 
     @Bean
     public FilterRegistrationBean buildCorsFilter(){

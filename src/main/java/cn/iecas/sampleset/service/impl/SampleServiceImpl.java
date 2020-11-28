@@ -119,10 +119,13 @@ public class SampleServiceImpl extends ServiceImpl<SampleInfoMapper, SampleInfo>
 
         if ((sampleSetTransferInfo.getChunks() != sampleSetTransferInfo.getUploadedChunk())
             || (sampleSetTransferInfo.getUploadedChunk()==0)){
-            uploadFilePath = transferService.transferTiles(sampleSetTransferParams,uploadFilePath);
-            isComplete = transferService.checkAndSetUploadProgress(sampleSetTransferParams, uploadFilePath);
+            transferService.transferTiles(sampleSetTransferParams,uploadFilePath);
+            isComplete = transferService.checkAndSetUploadProgress(sampleSetTransferParams);
         }
 
+        /*
+        如果文件已经上传完毕且尚未完成解压缩
+         */
         if (isComplete && (TransferStatus.FINISHED != sampleSetTransferInfo.getTransferStatus())){
             this.transferService.setTransferStatus(sampleSetId,md5,TransferStatus.STORAGING);
             this.asyncService.decompressAndStorageSampleSet(sampleSetInfo,md5,uploadFilePath);

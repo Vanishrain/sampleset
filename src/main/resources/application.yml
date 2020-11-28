@@ -8,9 +8,9 @@ server:
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://192.168.30.6:31189/sampleset_platform?useSSL=false&useUnicode=true&characterEncoding=utf8
-    username: iecas
-    password: 123456
+    url: jdbc:postgresql://localhost:5432/sampleset_platform?useSSL=false&useUnicode=true&characterEncoding=utf8
+    username: postgres
+    password: postgres
 
   http:
     multipart:
@@ -46,7 +46,7 @@ mybatis-plus:
 value:
   datasource: lizardfs
   dir:
-    rootDir: d:\\temp
+    rootDir: /Users/vanishrain/Desktop/
     publicRootDir: d:\\data\\traindata\public
   api:
     user-info: http://192.168.2.156:31151/v1.0/airstudio/user/info

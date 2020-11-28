@@ -1,6 +1,6 @@
 package cn.iecas.sampleset.controller;
 
-import cn.iecas.sampleset.common.annotation.Log;
+import cn.iecas.sampleset.common.annotation.ControllerLog;
 import cn.iecas.sampleset.pojo.dto.*;
 import cn.iecas.sampleset.pojo.dto.common.CommonResult;
 import cn.iecas.sampleset.pojo.dto.common.PageResult;
@@ -35,7 +35,7 @@ public class SampleController {
     @Autowired
     StringRedisTemplate stringRedisTemplate;
 
-    @Log("根据样本主键批量删除")
+    @ControllerLog("根据样本主键批量删除")
     @DeleteMapping("/{sampleIdList}")
     public CommonResult<String> deleteTiles(@NotEmpty @PathVariable List<Integer> sampleIdList) throws Exception {
         this.sampleService.deleteSamples(sampleIdList);
@@ -43,14 +43,14 @@ public class SampleController {
     }
 
     @GetMapping
-    @Log("分页查询样本数据")
+    @ControllerLog("分页查询样本数据")
     public CommonResult<PageResult<Sample>> listSampleBySetId(SampleRequestParams sampleRequestParams) throws Exception {
         PageResult<Sample> samplePageResult = this.sampleService.listSamplesBySetId(sampleRequestParams);
         return new CommonResult<PageResult<Sample>>().success().data(samplePageResult).message("查询样本数据成功");
 
     }
 
-    @Log("查询指定影像")
+    @ControllerLog("查询指定影像")
     @GetMapping(value = "/{sampleType}/{sampleId}")
     public CommonResult<Sample> getImageByName(@PathVariable int sampleId, @PathVariable SampleType sampleType ) throws Exception {
         Sample sample = this.sampleService.getSampleByTypeAndId(sampleId, sampleType);
@@ -58,7 +58,7 @@ public class SampleController {
     }
 
     @PostMapping(value = "/upload")
-    @Log("分块断点上传切片压缩包")
+    @ControllerLog("分块断点上传切片压缩包")
     public CommonResult<SampleSetTransferParams> uploadTiles(HttpServletRequest request, SampleSetTransferParams sampleSetTransferParams) throws Exception {
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
         if (!isMultipart)
@@ -69,7 +69,7 @@ public class SampleController {
     }
 
 
-    @Log("秒传判断，断点判断")
+    @ControllerLog("秒传判断，断点判断")
     @GetMapping(value = "/checkFileMd5")
     public CommonResult<SampleTransferStatus> checkFileMd5(int sampleSetId, String md5) throws Exception {
         SampleTransferStatus sampleTransferStatus = transferService.checkFileMd5(sampleSetId,md5);
@@ -98,7 +98,7 @@ public class SampleController {
      *
 
      */
-    @Log("根据数据集id返回返回属于该id的切片的年月日数据增长信息，当不指定id是则默认返回全部")
+    @ControllerLog("根据数据集id返回返回属于该id的切片的年月日数据增长信息，当不指定id是则默认返回全部")
     @GetMapping(value = "/statistic")
     public CommonResult statistic(TileInfoStatParamsDTO statParams){
         if(statParams.getImageSetIdList()!=null){

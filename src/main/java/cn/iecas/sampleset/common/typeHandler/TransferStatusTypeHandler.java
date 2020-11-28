@@ -21,7 +21,8 @@ public class TransferStatusTypeHandler extends BaseTypeHandler<TransferStatus> {
         int transferStatusValue = resultSet.getInt(s);
         if (0 == transferStatusValue)
             return TransferStatus.TRANSFERING;
-
+        if (1 == transferStatusValue)
+            return TransferStatus.STORAGING;
         return TransferStatus.FINISHED;
     }
 
@@ -30,7 +31,8 @@ public class TransferStatusTypeHandler extends BaseTypeHandler<TransferStatus> {
         int transferStatusValue = resultSet.getInt(i);
         if (0 == transferStatusValue)
             return TransferStatus.TRANSFERING;
-
+        if (1 == transferStatusValue)
+            return TransferStatus.STORAGING;
         return TransferStatus.FINISHED;
     }
 
@@ -39,7 +41,8 @@ public class TransferStatusTypeHandler extends BaseTypeHandler<TransferStatus> {
         int transferStatusValue = callableStatement.getInt(i);
         if (0 == transferStatusValue)
             return TransferStatus.TRANSFERING;
-
+        if (1 == transferStatusValue)
+            return TransferStatus.STORAGING;
         return TransferStatus.FINISHED;
     }
 }
